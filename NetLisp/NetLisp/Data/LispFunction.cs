@@ -10,15 +10,20 @@ namespace NetLisp.Data
 {
     public class LispFunction : ArgumentDefinedLispRoutine
     {
-        // this line is the only effective difference between a LispFunction and a LispMacro.
-        // it tells the evaluator to evaluate its arguments before handing controle to Execute.
-        // and tells it NOT to re-evaluate the return values.
+        private ScopeStack lambdaScope;
+
         public override LispDataType Type => LispDataType.Function;
 
-        public LispFunction(ExecutableBody functionBody, params LispSymbol[] arguments)
+        public LispFunction(ExecutableBody functionBody, ScopeStack executingScope, params LispSymbol[] arguments)
         {
             Body = functionBody;
             Arguments = arguments.ToList();
+            lambdaScope = executingScope;
+        }
+
+        protected override ScopeStack GetExecutingScope(RuntimeContext runtimeContext)
+        {
+            return lambdaScope;
         }
 
         public override IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext)

@@ -11,12 +11,13 @@ namespace NetLisp.Data
     public abstract class LispToken
     {
         public abstract LispDataType Type { get; }
-        public abstract bool TypeRequiresEvaluation { get; }
         public abstract bool TypeCanBeExecuted { get; }
         public abstract IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext);
 
         public bool Quoted { get; set; }
         public SourceReference SourceLocation { get; set; }
+
+        // add LispToken.TryParse for non-list value parsing
     }
     public enum LispDataType
     {
@@ -27,6 +28,6 @@ namespace NetLisp.Data
         Function,
         Macro,
         SpecialForm,
-        DotNetObject
+        DotNetObject // not implemented yet
     }
 }

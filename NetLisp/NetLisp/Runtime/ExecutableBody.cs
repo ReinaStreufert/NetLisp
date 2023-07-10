@@ -9,10 +9,13 @@ namespace NetLisp.Runtime
 {
     public abstract class ExecutableBody
     {
+        public abstract ExecutableBodyType Type { get; }
         public abstract IEnumerable<LispToken> Execute(RuntimeContext runtimeContext);
     }
     public class LispExecutableBody : ExecutableBody
     {
+        public override ExecutableBodyType Type => ExecutableBodyType.LispDefinedBody;
+
         public LispList Expression { get; set; }
 
         public LispExecutableBody(LispList expression)
@@ -32,11 +35,23 @@ namespace NetLisp.Runtime
     public delegate IEnumerable<LispToken> LispFunctionNativeCallback(RuntimeContext runtimeContext);
     public class NativeExecutableBody : ExecutableBody
     {
+        public override ExecutableBodyType Type => ExecutableBodyType.NativeBody;
+
         public LispFunctionNativeCallback NativeCallback { get; }
+
+        public NativeExecutableBody(LispFunctionNativeCallback nativeCallback)
+        {
+            NativeCallback = nativeCallback;
+        }
 
         public override IEnumerable<LispToken> Execute(RuntimeContext runtimeContext)
         {
             return NativeCallback(runtimeContext);
         }
+    }
+    public enum ExecutableBodyType
+    {
+        LispDefinedBody,
+        NativeBody
     }
 }

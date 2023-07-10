@@ -26,7 +26,7 @@ namespace NetLisp.Structs
                 return "(" + Line.ToString() + "," + Column + ")";
             } else
             {
-                return SourceName + " (" + Line.ToString() + "," + Column + ")";
+                return "(" + SourceName + " " + Line.ToString() + "," + Column + ")";
             }
         }
     }

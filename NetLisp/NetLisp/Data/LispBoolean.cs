@@ -11,7 +11,6 @@ namespace NetLisp.Data
     public class LispBoolean : LispToken
     {
         public override LispDataType Type => LispDataType.Boolean;
-        public override bool TypeRequiresEvaluation => false;
         public override bool TypeCanBeExecuted => false;
 
         public LispBoolean(bool val)
@@ -23,12 +22,12 @@ namespace NetLisp.Data
 
         public override IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext)
         {
-            yield return this;
+            yield return new LispBoolean(Value) { SourceLocation = SourceLocation };
         }
 
         public override string ToString()
         {
-            return Value.ToString().ToLower();
+            return "." + Value.ToString().ToLower() + ".";
         }
     }
 }

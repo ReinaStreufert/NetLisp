@@ -11,19 +11,24 @@ namespace NetLisp.Data
     public class LispList : LispToken
     {
         public override LispDataType Type => LispDataType.List;
-        public override bool TypeRequiresEvaluation => true;
         public override bool TypeCanBeExecuted => false;
 
         public List<LispToken> Items { get; set; } = new List<LispToken>();
 
         public override IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext)
         {
+            if (Items.Count == 0)
+            {
+                yield return new LispList();
+                yield break;
+            }
             List<LispToken> evaluationResult = new List<LispToken>();
             LispToken firstItem = Items[0];
             LispToken firstItemEvaluated = null;
             if (!firstItem.Quoted)
             {
                 // evaluate only the first item first as it may indicate that the rest should not be evaluated.
+                runtimeContext.Calls.CurrentlyEvaluatingToken = firstItem;
                 IEnumerable<LispToken> firstItemReturns = firstItem.Evaluate(runtimeContext);
                 foreach (LispToken item in firstItemReturns)
                 {
@@ -38,11 +43,12 @@ namespace NetLisp.Data
                 }
             } else
             {
+                firstItem.Quoted = false;
                 evaluationResult.Add(firstItem);
                 firstItemEvaluated = firstItem;
             }
             // evaluate rest of items if necessary
-            if (firstItemEvaluated != null && (firstItemEvaluated.Type == LispDataType.Macro || firstItemEvaluated.Type == LispDataType.SpecialForm))
+            if (firstItemEvaluated != null && !shouldEvaluateArgs(firstItemEvaluated))
             {
                 for (int i = 1; i < Items.Count; i++)
                 {
@@ -53,8 +59,10 @@ namespace NetLisp.Data
                 for (int i = 1; i < Items.Count; i++)
                 {
                     LispToken item = Items[i];
-                    if (item.Quoted || !item.TypeRequiresEvaluation)
+                    runtimeContext.Calls.CurrentlyEvaluatingToken = item;
+                    if (item.Quoted)
                     {
+                        item.Quoted = false;
                         evaluationResult.Add(item);
                     }
                     else
@@ -67,7 +75,9 @@ namespace NetLisp.Data
                     }
                 }
             }
+            runtimeContext.Calls.CurrentlyEvaluatingToken = this;
             LispList evaluatedList = new LispList();
+            evaluatedList.SourceLocation = SourceLocation;
             evaluatedList.Items = evaluationResult;
             if (firstItemEvaluated != null && firstItemEvaluated.TypeCanBeExecuted)
             {
@@ -79,8 +89,9 @@ namespace NetLisp.Data
                     // macros generally output "code" that needs to be further evaluated
                     foreach (LispToken executionResult in executionResults)
                     {
-                        if (executionResult.Quoted || !executionResult.TypeRequiresEvaluation)
+                        if (executionResult.Quoted)
                         {
+                            executionResult.Quoted = false;
                             yield return executionResult;
                         } else
                         {
@@ -101,6 +112,19 @@ namespace NetLisp.Data
             {
                 // list does not require execution
                 yield return evaluatedList;
+            }
+        }
+        private bool shouldEvaluateArgs(LispToken firstItemEvaluated)
+        {
+            if (firstItemEvaluated.Type == LispDataType.Macro)
+            {
+                return false;
+            } else if (firstItemEvaluated.Type == LispDataType.SpecialForm)
+            {
+                return ((LispSpecialForm)firstItemEvaluated).EvaluateArguments;
+            } else
+            {
+                return true;
             }
         }
 

@@ -17,8 +17,13 @@ namespace NetLisp.Text
         }
         private class SymbolParser : LispTokenParser
         {
+            private bool couldBeNumber = false;
             public override bool TryOpenToken(char input)
             {
+                if (input == '-')
+                {
+                    couldBeNumber = true;
+                }
                 return RegularExpressions.SymbolFirstAllowedCharacters.IsMatch(input.ToString());
             }
             public override bool TryContinueToken(char input)
@@ -27,6 +32,14 @@ namespace NetLisp.Text
             }
             public override bool CloseToken(string token, LispListParser parser)
             {
+                if (couldBeNumber)
+                {
+                    float numberVal;
+                    if (float.TryParse(token, out numberVal))
+                    {
+                        return parser.appendCurrentList(new LispNumber(numberVal));
+                    }
+                }
                 return parser.appendCurrentList(new LispSymbol(token));
             }
         }
@@ -64,7 +77,7 @@ namespace NetLisp.Text
             }
             public override bool TryContinueToken(char input)
             {
-                return RegularExpressions.TreeControlCharacters.IsMatch(input.ToString());
+                return false;
             }
             public override bool CloseToken(string token, LispListParser parser)
             {
@@ -74,8 +87,7 @@ namespace NetLisp.Text
                     return true;
                 } else if (token == ")")
                 {
-                    parser.listStack.Pop();
-                    return true;
+                    return parser.popList();
                 } else
                 {
                     // ?????

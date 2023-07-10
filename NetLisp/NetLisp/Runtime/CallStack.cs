@@ -1,4 +1,5 @@
 ﻿using NetLisp.Data;
+using NetLisp.Structs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +10,7 @@ namespace NetLisp.Runtime
 {
     public class CallStack
     {
-        // TODO: reimpliment with source locations of the caller instead of just the routine called
-        private Stack<ExecutableLispToken> stack = new Stack<ExecutableLispToken>();
+        private Stack<CallTrace> stack = new Stack<CallTrace>();
 
         internal CallStack() { }
 
@@ -19,22 +19,32 @@ namespace NetLisp.Runtime
             get
             {
                 if (stack.Count == 0) return null;
-                return stack.Peek();
+                return stack.Peek().CalledToken;
             }
         }
+        public LispToken CurrentlyEvaluatingToken { get; internal set; }
 
         public void Push(ExecutableLispToken token)
         {
-            stack.Push(token);
+            stack.Push(new CallTrace(CurrentlyEvaluatingToken.SourceLocation, token));
         }
         public void Pop()
         {
             stack.Pop();
         }
 
-        public IEnumerable<ExecutableLispToken> AllCallers()
+        public IEnumerable<CallTrace> AllCallers()
         {
             return stack;
+        }
+        public CallStack Copy()
+        {
+            CallStack copy = new CallStack();
+            foreach (CallTrace caller in AllCallers())
+            {
+                copy.stack.Push(caller);
+            }
+            return copy;
         }
     }
 }

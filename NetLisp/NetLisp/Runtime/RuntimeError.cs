@@ -20,26 +20,33 @@ namespace NetLisp.Runtime
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Runtime error at " + ErrorLocation.ToString() + ": " + Text);
-            foreach (ExecutableLispToken caller in Calls.AllCallers().Reverse())
+            sb.AppendLine("Runtime error:" + " " + Text);
+            SourceReference nextCallLocation = ErrorLocation;
+            foreach (CallTrace call in Calls.AllCallers().Reverse())
             {
                 sb.Append("    at ");
                 // attempt to find a name for the caller by searching the scope stack
-                string? callerName = Scopes.CurrentScope.Search(caller);
+                string? callerName = Scopes.CurrentScope.Search(call.CalledToken);
                 if (callerName == null)
                 {
-                    sb.AppendLine("<anonymous function>");
+                    sb.Append("<anonymous> ");
                 } else
                 {
-                    sb.AppendLine(callerName);
+                    sb.Append(callerName + " ");
                 }
+                sb.AppendLine(nextCallLocation.ToString());
+                nextCallLocation = call.CallerLocation;
             }
+            sb.AppendLine("    at <evaluationstart> " + nextCallLocation.ToString());
             return sb.ToString();
         }
     }
     public enum RuntimeErrorType
     {
-
+        ArgumentMismatchError,
+        UnknownSymbolMeaning,
+        ExpectedSingleValue,
+        SymbolAlreadyDefined
     }
     class LispRuntimeException : Exception
     {

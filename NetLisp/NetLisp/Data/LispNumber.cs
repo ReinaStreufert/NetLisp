@@ -11,7 +11,6 @@ namespace NetLisp.Data
     public class LispNumber : LispToken
     {
         public override LispDataType Type => LispDataType.Number;
-        public override bool TypeRequiresEvaluation => false;
         public override bool TypeCanBeExecuted => false;
 
         public LispNumber(float val)
@@ -23,7 +22,7 @@ namespace NetLisp.Data
 
         public override IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext)
         {
-            yield return this;
+            yield return new LispNumber(Value) { SourceLocation = SourceLocation };
         }
 
         public override string ToString()

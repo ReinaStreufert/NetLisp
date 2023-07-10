@@ -13,7 +13,6 @@ namespace NetLisp.Data
     public class LispSymbol : LispToken
     {
         public override LispDataType Type => LispDataType.Symbol;
-        public override bool TypeRequiresEvaluation => true;
         public override bool TypeCanBeExecuted => false;
 
         public LispSymbol(string val)
@@ -45,9 +44,10 @@ namespace NetLisp.Data
             LispToken? defValue = runtimeContext.Scopes.CurrentScope.Get(value);
             if (defValue == null)
             {
-                runtimeContext.RaiseRuntimeError(/*...*/);
+                runtimeContext.RaiseRuntimeError(this, RuntimeErrorType.UnknownSymbolMeaning, "Symbol '" + value + "' has no meaning in the current scope. Did you mean to quote it?");
             } else
             {
+                defValue.SourceLocation = SourceLocation;
                 yield return defValue;
             }
         }

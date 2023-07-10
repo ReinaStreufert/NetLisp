@@ -119,9 +119,13 @@ namespace NetLisp.Text
                     tokenText.Append(inputChar);
                 } else
                 {
-                    Position--;
                     if (usedParser.CloseToken(tokenText.ToString(), this))
                     {
+                        Position--;
+                        if (isEndOfInput())
+                        {
+                            return resolveEndOfInput();
+                        }
                         if (ParseResult != null)
                         {
                             return TokenParseResult.EndOfExpression;
@@ -139,6 +143,14 @@ namespace NetLisp.Text
 
         private TokenParseResult resolveEndOfInput()
         {
+            if (quoteFlagSet)
+            {
+                LastError = new SyntaxError();
+                LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
+                LastError.ErrorLocation = lastTokenLocation;
+                LastError.Text = "Expected value after quote, got end of input";
+                return TokenParseResult.SyntaxError;
+            }
             if (listStack.Count > 0)
             {
                 LastError = new SyntaxError();
@@ -184,13 +196,30 @@ namespace NetLisp.Text
             }
             listStack.Push(newList);
         }
-        private void popList()
+        private bool popList()
         {
+            if (listStack.Count == 0)
+            {
+                LastError = new SyntaxError();
+                LastError.ErrorType = SyntaxErrorType.WrongNumberOfCloseParens;
+                LastError.ErrorLocation = lastTokenLocation;
+                LastError.Text = "More closing parens than opening parens";
+                return false;
+            }
+            if (quoteFlagSet)
+            {
+                LastError = new SyntaxError();
+                LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
+                LastError.ErrorLocation = lastTokenLocation;
+                LastError.Text = "Expected value after quote, got end of list";
+                return false;
+            }
             LispList popResult = listStack.Pop();
             if (listStack.Count == 0)
             {
                 ParseResult = popResult;
             }
+            return true;
         }
 
         public SourceReference GetLocation()
