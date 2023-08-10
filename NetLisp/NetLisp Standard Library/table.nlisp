@@ -1,0 +1,60 @@
+; native defined functions:
+; tbnew, tbhaskey, tbgval, tbsval, tbdelkey, tbpairs
+
+(require list)
+
+(define tbfindval (lambda (table srchval) (
+  (let (pairs (tbpairs table)) (
+    (lsiter pairs (lambda (pair) (
+      (if (= (lslast pair) srchval)
+        (return-from tbfindval (lsfirst pair))
+        ()
+      )
+    )))
+    ()
+  ))
+)))
+
+(define tbfindall (lambda (table srchval) (
+  (let (pairs (tbpairs table) matches ()) (
+    (lsiter pairs (lambda (pair) (
+      (if (= (lslast pair) srchval)
+        (setq matches (lspush matches (lsfirst pair)))
+        ()
+      )
+    )))
+    (values matches)
+  ))
+)))
+
+; tbunpack is VERY BAD to use in any normal way of writing code. it is only
+; useful in the console since tbuse would only be possible to use one statement
+; at a time which is a pain in the ass. in every single other case you should
+; definitely use tbuse and not unpack random shit into the global scope
+(define tbunpack (macro (table) (
+  (let (defstatement () pairs (tbpairs table) lastkey ()) (
+    (setq defstatement (lspush defstatement define))
+    (lsiter pairs (lambda (pair) (
+      (setq lastkey (lsfirst pair))
+      (setq defstatement (lsconc defstatement (
+        lastkey
+        (lsnew tbgval table (lsnew quote lastkey))
+      )))
+    )))
+    (values defstatement)
+  ))
+)))
+
+; love tbuse always use tbuse its great
+(define tbuse (macro (table body) (
+  (let (declist () pairs (tbpairs table) lastkey ()) (
+    (lsiter pairs (lambda (pair) (
+      (setq lastkey (lsfirst pair))
+      (setq declist (lsconc declist (
+        lastkey
+        (lsnew tbgval table (lsnew quote lastkey))
+      )))
+    )))
+    (lsnew let declist (quote body))
+  ))
+)))

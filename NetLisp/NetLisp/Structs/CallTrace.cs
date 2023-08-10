@@ -9,8 +9,10 @@ namespace NetLisp.Structs
 {
     public class CallTrace
     {
-        public SourceReference CallerLocation;
-        public ExecutableLispToken CalledToken;
+        public SourceReference CallerLocation { get; set; }
+        public ExecutableLispToken CalledToken { get; set; }
+        public bool LoopFlag { get; set; } = false;
+        public LispList LoopCallTarget { get; set; } = null;
         public CallTrace(SourceReference callerLocation, ExecutableLispToken calledToken)
         {
             CallerLocation = callerLocation;

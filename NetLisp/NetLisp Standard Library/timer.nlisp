@@ -1,0 +1,89 @@
+(require list)
+(require table)
+(require dotnet)
+
+(let (
+  timer (tbnew)
+  datetime (require datetime)
+  handle (require handle)
+  async (require async)
+  swhandletype ()
+  newswhandle ()
+  gethandlesw ()
+) (
+  (dnuse (System System.Threading) (
+    (tbsval timer 'delay (lambda (timeout) (
+      (Thread:Sleep (TimeSpan.new timeout))
+    )))
+    (tbsval timer 'delayms (lambda (timeout) (
+      (Thread:Sleep timeout)
+    )))
+    (tbuse async (
+      (tbsval timer 'delayasync (alambda (timeout) (
+        (Thread:Sleep (TimeSpan.new timeout))
+      )))
+      (tbsval timer 'delaymsasync (alambda (timeout) (
+        (Thread:Sleep timeout)
+      )))
+    ))
+  ))
+  (tbuse handle (
+    (setq swhandletype (newhandletype))
+    (setq newswhandle (lambda (sw) (
+      (newhandle swhandletype sw)
+    )))
+    (setq gethandlesw (lambda (swhandle) (
+      (gethandleval swhandletype swhandle)
+    )))
+    (tbsval timer 'freestopwatch (lambda (swhandle) (
+      (freehandle swhandletype swhandle)
+    )))
+  ))
+  (tbsval timer 'swnew (lambda () (
+    (let (swtb (tbnew)) (
+      (tbsval swtb 'running? false)
+      (tbsval swtb 'committed 0)
+      (tbsval swtb 'dtlaststart ())
+      (newswhandle swtb)
+    ))
+  )))
+  (tbuse datetime (
+    (tbsval timer 'swelapsed (lambda (thandle) (
+      (let (swtb (gethandlesw thandle)) (
+        (+ (tbgval swtb 'committed) (if (tbgval swtb 'running?)
+          (- (now) (tbgval swtb 'dtlaststart))
+          (values 0)
+        ))
+      ))
+    )))
+    (tbsval timer 'swrunning? (lambda (thandle) (
+      (tbgval (gethandlesw thandle) 'running?)
+    )))
+    (tbsval timer 'swstart (lambda (thandle) (
+      (let (swtb (gethandlesw thandle)) (
+        (if (not (tbgval swtb 'running?))
+          (
+            (tbsval swtb 'dtlaststart (now))
+            (tbsval swtb 'running? true)
+          )
+          ()
+        )
+      ))
+      (returnvalues)
+    )))
+    (tbsval timer 'swstop (lambda (thandle) (
+      (let (swtb (gethandlesw thandle)) (
+        (if (tbgval swtb 'running?)
+          (
+            (tbsval swtb 'committed (+ (tbgval swtb 'committed) (- (now) (tbgval swtb 'dtlaststart))))
+            (tbsval swtb 'running? false)
+          )
+          ()
+        )
+      ))
+      (returnvalues)
+    )))
+
+    (values timer)
+  ))
+))

@@ -9,17 +9,27 @@ namespace NetLisp.Data
 {
     public class LispMacro : ArgumentDefinedLispRoutine
     {
+        private ScopeStack lambdaScope;
+
         public override LispDataType Type => LispDataType.Macro;
 
-        public LispMacro(ExecutableBody functionBody, params LispSymbol[] arguments)
+        public LispMacro(ExecutableBody functionBody, ScopeStack executingScope, ArgumentDefinedMetadata? metadata, params LispSymbol[] arguments)
         {
             Body = functionBody;
-            Arguments = arguments.ToList();
+            Arguments = arguments;
+            if (metadata != null)
+            {
+                InstanceMetadata = metadata;
+            } else
+            {
+                InstanceMetadata = ArgumentDefinedMetadata.CreateBlank(arguments);
+            }
+            lambdaScope = executingScope;
         }
 
         protected override ScopeStack GetExecutingScope(RuntimeContext runtimeContext)
         {
-            return runtimeContext.Scopes;
+            return ScopeStack.Combine(runtimeContext.Scopes, lambdaScope);
         }
 
         protected override ExecutableBody PreprocessBody(RuntimeContext runtimeContext)
@@ -27,7 +37,7 @@ namespace NetLisp.Data
             if (Body.Type == ExecutableBodyType.LispDefinedBody)
             {
                 LispExecutableBody inputBody = (LispExecutableBody)Body;
-                return new LispExecutableBody(preprocessListRecursive(inputBody.Expression, runtimeContext));
+                return new LispExecutableBody(preprocessListRecursive(inputBody.Expressions, runtimeContext));
             } else
             {
                 return Body;

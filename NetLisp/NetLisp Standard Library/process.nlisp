@@ -1,0 +1,63 @@
+(require list)
+(require table)
+(require text)
+(require dotnet)
+
+(dnloadasm "System.Diagnostics.Process")
+(dnuse (System.Diagnostics) (
+  (define queryproc (macro (queryexpr) (
+    (lsnew let (lsnew 'proclist (lsnew)) (lsnew
+      (lsnew lsiter (lsnew Process:GetProcesses) (lsnew lambda (lsnew 'proc) (lsnew
+        (lsnew let (lsnew
+          'id (lsnew Process.Id (quote proc))
+          'name (lsnew Process.ProcessName (quote proc))
+          'mem (lsnew Process.WorkingSet64 (quote proc))
+          'sess (lsnew Process.SessionId (quote proc))
+        ) (lsnew
+          (lsnew if (quote queryexpr)
+            (lsnew setq (quote proclist) (lsnew lspush (quote proclist) (quote proc)))
+            (lsnew)
+          )
+        ))
+      )))
+      (lsnew values (quote proclist))
+    ))
+  )))
+  (define allprocs (lambda () (
+    (Process:GetProcesses)
+  )))
+  (define idproc (lambda (id) (
+    (Process:GetProcessById id)
+  )))
+  (let (outputhelpers (load "shellsources\\outputhelpers.nlisp")) (
+    (tbuse outputhelpers (
+      (define listproc (lambda (proclist) (
+        (let (
+          sessioncol ()
+          memoryusagecol ()
+          idcol ()
+          namecol ()
+        ) (
+          (lsiter proclist (lambda (currentproc) (
+            (setq sessioncol (lspush sessioncol (txfromnum (Process.SessionId currentproc))))
+            (setq memoryusagecol (lspush memoryusagecol (txfromnum (Process.WorkingSet64 currentproc))))
+            (setq idcol (lspush idcol (txfromnum (Process.Id currentproc))))
+            (setq namecol (lspush namecol (Process.ProcessName currentproc)))
+          )))
+          (printcolumns (lsnew
+            (lsnew "Session" sessioncol)
+            (lsnew "Memory Usage" memoryusagecol)
+            (lsnew "ID" idcol)
+            (lsnew "Name" namecol)
+          ))
+          (returnvalues)
+        ))
+      )))
+    ))
+  ))
+  (define killproc (lambda (proclist) (
+    (lsiter proclist (lambda (proc) (
+      (Process.Kill proc)
+    )))
+  )))
+))

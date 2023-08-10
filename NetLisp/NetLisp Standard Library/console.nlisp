@@ -1,0 +1,100 @@
+(require list)
+(require table)
+(require dotnet)
+
+(let (
+  console (tbnew)
+) (
+  (dnuse (System) (
+    (setq ConsoleKeyInfo.Key (dnexactreturn ConsoleKeyInfo.Key))
+    (setq ConsoleKeyInfo.Modifiers (dnexactreturn ConsoleKeyInfo.Modifiers))
+    (tbsval console 'color-black ConsoleColor.Black)
+    (tbsval console 'color-darkblue ConsoleColor.DarkBlue)
+    (tbsval console 'color-darkgreen ConsoleColor.DarkGreen)
+    (tbsval console 'color-darkcyan ConsoleColor.DarkCyan)
+    (tbsval console 'color-darkred ConsoleColor.DarkRed)
+    (tbsval console 'color-darkmagenta ConsoleColor.DarkMagenta)
+    (tbsval console 'color-darkyellow ConsoleColor.DarkYellow)
+    (tbsval console 'color-gray ConsoleColor.Gray)
+    (tbsval console 'color-darkgray ConsoleColor.DarkGray)
+    (tbsval console 'color-blue ConsoleColor.Blue)
+    (tbsval console 'color-green ConsoleColor.Green)
+    (tbsval console 'color-cyan ConsoleColor.Cyan)
+    (tbsval console 'color-red ConsoleColor.Red)
+    (tbsval console 'color-magenta ConsoleColor.Magenta)
+    (tbsval console 'color-yellow ConsoleColor.Yellow)
+    (tbsval console 'color-white ConsoleColor.White)
+
+    (tbsval console 'clearscr (lambda () (
+      (Console:Clear)
+    )))
+    (tbsval console 'println (lambda (val) (
+      (Console:WriteLine val)
+    )))
+    (tbsval console 'print (lambda (val) (
+      (Console:Write val)
+    )))
+    (tbsval console 'readln (lambda () (
+      (Console:ReadLine)
+    )))
+    (tbsval console 'readch (lambda () (
+      (Object.ToString (Convert.ToChar (Console:Read))) ; Console:Read -> int : Convert.ToChar -> char : Object.ToString -> string : lisp
+    )))
+    (tbsval console 'readkey (lambda () (
+      (let (
+        keyinfo (Console:ReadKey)
+        keyinfotb (tbnew)
+        modifierflags (ConsoleKeyInfo.Modifiers keyinfo)
+      ) (
+        (tbsval keyinfotb 'key (Object.ToString (ConsoleKeyInfo.Key keyinfo)))
+        (tbsval keyinfotb 'char (Object.ToString (ConsoleKeyInfo.KeyChar keyinfo)))
+        (tbsval keyinfotb 'ctrlmod (ConsoleModifiers.HasFlag modifierflags ConsoleModifiers.Control))
+        (tbsval keyinfotb 'shiftmod (ConsoleModifiers.HasFlag modifierflags ConsoleModifiers.Shift))
+        (tbsval keyinfotb 'altmod (ConsoleModifiers.HasFlag modifierflags ConsoleModifiers.Alt))
+        (values keyinfotb)
+      ))
+    )))
+    (tbsval console 'fcolor (lambda (color) (
+      (Console:ForegroundColor color)
+    )))
+    (tbsval console 'bcolor (lambda (color) (
+      (Console:BackgroundColor color)
+    )))
+    (tbsval console 'cursorpos (lambda () (
+      (lsnew (Console:CursorLeft) (Console:CursorTop))
+    )))
+    (tbsval console 'movecursor (lambda (newxy) (
+      (Console:CursorLeft (lsfirst newxy))
+      (Console:CursorTop (lslast newxy))
+    )))
+    (tbsval console 'showcursor (lambda () (
+      (Console:CursorVisible true)
+    )))
+    (tbsval console 'hidecursor (lambda () (
+      (Console:CursorVisible false)
+    )))
+    (tbsval console 'windowsize (lambda () (
+      (lsnew (Console:WindowWidth) (Console:WindowHeight))
+    )))
+    (tbsval console 'resizewindow (lambda (newxy) (
+      (Console:WindowWidth (lsfirst newxy))
+      (Console:WindowHeight (lslast newxy))
+    )))
+    (tbsval console 'windowscrollpos (lambda () (
+      (lsnew (Console:WindowLeft) (Console:WindowTop))
+    )))
+    (tbsval console 'scrollwindow (lambda (newxy) (
+      (Console:WindowLeft (lsfirst newxy))
+      (Console:WindowTop (lslast newxy))
+    )))
+    (tbsval console 'buffersize (lambda () (
+      (lsnew (Console:BufferWidth) (Console:BufferHeight))
+    )))
+    (tbsval console 'resizebuffer (lambda (newxy) (
+      (Console:BufferWidth (lsfirst newxy))
+      (Console:BufferHeight (lslast newxy))
+    )))
+
+    (values console)
+  ))
+))

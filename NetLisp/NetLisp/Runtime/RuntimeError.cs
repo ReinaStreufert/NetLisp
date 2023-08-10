@@ -46,9 +46,17 @@ namespace NetLisp.Runtime
         ArgumentMismatchError,
         UnknownSymbolMeaning,
         ExpectedSingleValue,
-        SymbolAlreadyDefined
+        SymbolAlreadyDefined,
+        CannotRunitback,
+        SpecialTokenMisuse,
+        ReturnToNonCaller,
+        DotNetException,
+        DependencyLoadError,
+        SandboxViolation,
+        InvalidMetadata,
+        Other
     }
-    class LispRuntimeException : Exception
+    public class LispRuntimeException : Exception
     {
         public RuntimeError LispError { get; set; }
         public override string Message => LispError.ToString();

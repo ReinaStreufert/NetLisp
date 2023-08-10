@@ -3,14 +3,30 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetLisp", "NetLisp\NetLisp.csproj", "{4DF51FDC-1CEE-49F4-B0F4-CD1C11BF94F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetLisp", "NetLisp\NetLisp.csproj", "{4DF51FDC-1CEE-49F4-B0F4-CD1C11BF94F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nlispcr", "nlispcr\nlispcr.csproj", "{D19A5A37-9178-444F-ADF2-746BB090546D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "nlispcr", "nlispcr\nlispcr.csproj", "{D19A5A37-9178-444F-ADF2-746BB090546D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5C0D6457-83A6-4093-A001-2D1F4034FD85}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NetLisp Standard Library", "NetLisp Standard Library", "{3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispListNativeSource", "NetLisp Standard Library\LispListNativeSource\LispListNativeSource.csproj", "{600959D5-3CAC-412B-983A-C40A94BE7D10}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispTableNativeSource", "NetLisp Standard Library\LispTableNativeSource\LispTableNativeSource.csproj", "{CCB99B6E-A662-4B8B-B276-1A60AD930A97}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispMathNativeSource", "NetLisp Standard Library\LispMathNativeSource\LispMathNativeSource.csproj", "{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispDNBridgeNativeSource", "NetLisp Standard Library\LispDNBridgeNativeSource\LispDNBridgeNativeSource.csproj", "{E531C582-A751-40FE-821A-D6C70DEE0A80}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "nlshell", "nlshell\nlshell.csproj", "{97628A1A-98C9-49C3-934D-C3C910723556}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispAsyncNativeSource", "NetLisp Standard Library\LispAsyncNativeSource\LispAsyncNativeSource.csproj", "{442CC45A-9E81-459F-9C7B-E7104CB6AA00}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LispTextNativeSource", "NetLisp Standard Library\LispTextNativeSource\LispTextNativeSource.csproj", "{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +42,45 @@ Global
 		{D19A5A37-9178-444F-ADF2-746BB090546D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D19A5A37-9178-444F-ADF2-746BB090546D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D19A5A37-9178-444F-ADF2-746BB090546D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{600959D5-3CAC-412B-983A-C40A94BE7D10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{600959D5-3CAC-412B-983A-C40A94BE7D10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{600959D5-3CAC-412B-983A-C40A94BE7D10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{600959D5-3CAC-412B-983A-C40A94BE7D10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCB99B6E-A662-4B8B-B276-1A60AD930A97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCB99B6E-A662-4B8B-B276-1A60AD930A97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCB99B6E-A662-4B8B-B276-1A60AD930A97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCB99B6E-A662-4B8B-B276-1A60AD930A97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E531C582-A751-40FE-821A-D6C70DEE0A80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E531C582-A751-40FE-821A-D6C70DEE0A80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E531C582-A751-40FE-821A-D6C70DEE0A80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E531C582-A751-40FE-821A-D6C70DEE0A80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97628A1A-98C9-49C3-934D-C3C910723556}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97628A1A-98C9-49C3-934D-C3C910723556}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97628A1A-98C9-49C3-934D-C3C910723556}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97628A1A-98C9-49C3-934D-C3C910723556}.Release|Any CPU.Build.0 = Release|Any CPU
+		{442CC45A-9E81-459F-9C7B-E7104CB6AA00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{442CC45A-9E81-459F-9C7B-E7104CB6AA00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{442CC45A-9E81-459F-9C7B-E7104CB6AA00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{442CC45A-9E81-459F-9C7B-E7104CB6AA00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{600959D5-3CAC-412B-983A-C40A94BE7D10} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
+		{CCB99B6E-A662-4B8B-B276-1A60AD930A97} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
+		{928B3B8B-19E4-46B3-B5D8-B7222B2F94D2} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
+		{E531C582-A751-40FE-821A-D6C70DEE0A80} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
+		{442CC45A-9E81-459F-9C7B-E7104CB6AA00} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
+		{8B05D353-DA9A-4D7C-BE2B-FA65BFC2A88A} = {3D19252A-8F4B-43B6-B9D5-53B57ACD5AD1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A5CFF5D0-43AA-4B06-B486-0C7735369147}

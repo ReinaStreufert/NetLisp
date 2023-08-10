@@ -14,10 +14,17 @@ namespace NetLisp.Data
 
         public override LispDataType Type => LispDataType.Function;
 
-        public LispFunction(ExecutableBody functionBody, ScopeStack executingScope, params LispSymbol[] arguments)
+        public LispFunction(ExecutableBody functionBody, ScopeStack executingScope, ArgumentDefinedMetadata? metadata, params LispSymbol[] arguments)
         {
             Body = functionBody;
-            Arguments = arguments.ToList();
+            Arguments = arguments;
+            if (metadata != null)
+            {
+                InstanceMetadata = metadata;
+            } else
+            {
+                InstanceMetadata = ArgumentDefinedMetadata.CreateBlank(arguments);
+            }
             lambdaScope = executingScope;
         }
 

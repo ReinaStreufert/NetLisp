@@ -1,0 +1,124 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (System) (
+  (let (
+    datetimetb (tbnew)
+    locale (require locale)
+  ) (
+    (tbsval datetimetb 'now (lambda () (
+      (DateTime.Ticks (DateTime:Now))
+    )))
+    (tbsval datetimetb 'parsedt (lambda (datestr) (
+      (let (dtresult) (
+        (if (DateTime:TryParse datestr 'dtresult)
+          (DateTime.Ticks dtresult)
+          (lsnew)
+        )
+      ))
+    )))
+    (tbsval datetimetb 'dtstr (lambda (dt) (
+      (DateTime.ToString (DateTime.new dt))
+    )))
+    (tbuse locale (
+      (tbsval datetimetb 'parsedtx (lambda (datestr lhandle) (
+        (let (dtresult) (
+          (if (DateTime:TryParse datestr (dncultureinfofromlhandle lhandle) 'dtresult)
+            (DateTime.Ticks dtresult)
+            (lsnew)
+          )
+        ))
+      )))
+      (tbsval datetimetb 'dtstrx (lambda (dt formatstr lhandle) (
+        (DateTime.ToString (DateTime.new dt) formatstr (dncultureinfofromlhandle lhandle))
+      )))
+    ))
+    (tbsval datetimetb 'dtexact (lambda (year month day hour minute second) (
+      (DateTime.Ticks (DateTime.new year month day hour minute second))
+    )))
+    (tbsval datetimetb 'dtspan (lambda (hours minutes seconds milliseconds) (
+      (TimeSpan.Ticks (TimeSpan.new hours minutes seconds milliseconds))
+    )))
+    (tbsval datetimetb 'dtmilliseconds (lambda (ms) (
+      (TimeSpan.Ticks (TimeSpan:FromMilliseconds ms))
+    )))
+    (tbsval datetimetb 'dtseconds (lambda (seconds) (
+      (TimeSpan.Ticks (TimeSpan:FromSeconds seconds))
+    )))
+    (tbsval datetimetb 'dtminutes (lambda (minutes) (
+      (TimeSpan.Ticks (TimeSpan:FromMinutes minutes))
+    )))
+    (tbsval datetimetb 'dthours (lambda (hours) (
+      (TimeSpan.Ticks (TimeSpan:FromHours hours))
+    )))
+    (tbsval datetimetb 'year (lambda (dt) (
+      (DateTime.Year (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'dayofyear (lambda (dt) (
+      (DateTime.DayOfYear (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'month (lambda (dt) (
+      (DateTime.Month (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'day (lambda (dt) (
+      (DateTime.Day (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'days (lambda (dt) (
+      (TimeSpan.Days (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totaldays (lambda (dt) (
+      (TimeSpan.TotalDays (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'dayofweek (lambda (dt) (
+      (DateTime.DayOfWeek (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'hour (lambda (dt) (
+      (DateTime.Hour (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'hours (lambda (dt) (
+      (TimeSpan.Hours (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totalhours (lambda (dt) (
+      (TimeSpan.TotalHours (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'minute (lambda (dt) (
+      (DateTime.Minute (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'minutes (lambda (dt) (
+      (TimeSpan.Minutes (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totalminutes (lambda (dt) (
+      (TimeSpan.TotalMinutes (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'second (lambda (dt) (
+      (DateTime.Second (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'seconds (lambda (dt) (
+      (TimeSpan.Seconds (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totalseconds (lambda (dt) (
+      (TimeSpan.TotalSeconds (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'millisecond (lambda (dt) (
+      (DateTime.Millisecond (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'milliseconds (lambda (dt) (
+      (TimeSpan.Milliseconds (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totalmilliseconds (lambda (dt) (
+      (TimeSpan.TotalMilliseconds (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'microsecond (lambda (dt) (
+      (DateTime.Microsecond (DateTime.new dt))
+    )))
+    (tbsval datetimetb 'microseconds (lambda (dt) (
+      (TimeSpan.Microseconds (TimeSpan.new dt))
+    )))
+    (tbsval datetimetb 'totalmicroseconds (lambda (dt) (
+      (TimeSpan.TotalMicroseconds (TimeSpan.new dt))
+    )))
+
+    (values datetimetb)
+  ))
+))

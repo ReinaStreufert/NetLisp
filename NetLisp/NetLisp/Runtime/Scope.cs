@@ -23,6 +23,11 @@ namespace NetLisp.Runtime
             return new Scope() { Parent = parent };
         }
 
+        public static void LinkScopes(Scope srcScope, Scope dstScope)
+        {
+            dstScope.nameTable = srcScope.nameTable;
+        }
+
         public bool Define(string name)
         {
             return Define(name, null);
@@ -86,6 +91,10 @@ namespace NetLisp.Runtime
             {
                 return Parent.Search(value);
             }
+        }
+        public IEnumerable<KeyValuePair<string, LispToken>> AllDefinedNames()
+        {
+            return nameTable;
         }
     }
 }

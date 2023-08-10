@@ -27,24 +27,31 @@ namespace NetLisp.Text
         private bool quoteFlagSet = false;
         private SourceReference lastTokenLocation;
 
+        public CharacterMap<CharacterMapTokenClass> OutputCharacterMap { get; set; } = null;
         public int Position { get; private set; } = 0;
         public LispList ParseResult { get; private set; } = null;
         public SyntaxError LastError { get; private set; } = null;
 
-        public LispListParser(string inputText, string sourceName = "", int startPosition = 0)
+        public LispListParser(string inputText, string sourceName = "", int startPosition = 0, bool createCharacterMap = false)
         {
             this.inputText = inputText;
             this.sourceName = sourceName;
             this.Position = startPosition;
             parsers.Add(new SymbolParser());
+            parsers.Add(new CommentParser());
+            parsers.Add(new StringParser());
             parsers.Add(new NumberParser());
             parsers.Add(new TreeControlParser());
             parsers.Add(new WhitespaceParser());
+            if (createCharacterMap)
+            {
+                OutputCharacterMap = new CharacterMap<CharacterMapTokenClass>();
+            }
         }
 
         public TokenParseResult ParseNext()
         {
-            if (isEndOfInput())
+            if (IsEndOfInput())
             {
                 // if ParseNext is called not for the first time and it is the end of input, it indicates
                 // misuse of the LispListParser class rather than a syntax error. If it is the first call,
@@ -71,8 +78,16 @@ namespace NetLisp.Text
             char tokenFirstChar = nextChar();
             if (tokenFirstChar == '\'')
             {
+                if (quoteFlagSet)
+                {
+                    LastError = new SyntaxError();
+                    LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
+                    LastError.ErrorLocation = lastTokenLocation;
+                    LastError.Text = "Expected value after quote, got quote";
+                    return TokenParseResult.SyntaxError;
+                }
                 quoteFlagSet = true;
-                if (isEndOfInput())
+                if (IsEndOfInput())
                 {
                     LastError = new SyntaxError();
                     LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
@@ -80,12 +95,14 @@ namespace NetLisp.Text
                     LastError.Text = "Expected value after quote, got end of input";
                     return TokenParseResult.SyntaxError;
                 }
+                OutputCharacterMap?.Write(tokenFirstChar, CharacterMapTokenClass.Quote);
+                lastTokenLocation = GetLocation();
                 tokenFirstChar = nextChar();
             }
             LispTokenParser usedParser = null;
             foreach (LispTokenParser checkParser in parsers)
             {
-                if (checkParser.TryOpenToken(tokenFirstChar))
+                if (checkParser.TryOpenToken(tokenFirstChar, this))
                 {
                     usedParser = checkParser;
                     break;
@@ -93,7 +110,6 @@ namespace NetLisp.Text
             }
             if (usedParser == null)
             {
-                Position--;
                 LastError = new SyntaxError();
                 LastError.ErrorType = SyntaxErrorType.UnknownToken;
                 LastError.ErrorLocation = lastTokenLocation;
@@ -103,7 +119,7 @@ namespace NetLisp.Text
             tokenText.Append(tokenFirstChar);
             for (; ; )
             {
-                if (isEndOfInput())
+                if (IsEndOfInput())
                 {
                     if (usedParser.CloseToken(tokenText.ToString(), this))
                     {
@@ -114,7 +130,7 @@ namespace NetLisp.Text
                     }
                 }
                 char inputChar = nextChar();
-                if (usedParser.TryContinueToken(inputChar))
+                if (usedParser.TryContinueToken(inputChar, this))
                 {
                     tokenText.Append(inputChar);
                 } else
@@ -122,7 +138,7 @@ namespace NetLisp.Text
                     if (usedParser.CloseToken(tokenText.ToString(), this))
                     {
                         Position--;
-                        if (isEndOfInput())
+                        if (IsEndOfInput())
                         {
                             return resolveEndOfInput();
                         }
@@ -135,6 +151,7 @@ namespace NetLisp.Text
                         }
                     } else
                     {
+                        Position--;
                         return TokenParseResult.SyntaxError;
                     }
                 }
@@ -149,6 +166,7 @@ namespace NetLisp.Text
                 LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
                 LastError.ErrorLocation = lastTokenLocation;
                 LastError.Text = "Expected value after quote, got end of input";
+                ParseResult = listStack.Last();
                 return TokenParseResult.SyntaxError;
             }
             if (listStack.Count > 0)
@@ -157,6 +175,7 @@ namespace NetLisp.Text
                 LastError.ErrorType = SyntaxErrorType.WrongNumberOfCloseParens;
                 LastError.ErrorLocation = lastTokenLocation;
                 LastError.Text = "Expected " + listStack.Count + " more closing parens";
+                ParseResult = listStack.Last();
                 return TokenParseResult.SyntaxError;
             }
             return TokenParseResult.EndOfInput;
@@ -212,6 +231,7 @@ namespace NetLisp.Text
                 LastError.ErrorType = SyntaxErrorType.UnexpectedEndOfInput;
                 LastError.ErrorLocation = lastTokenLocation;
                 LastError.Text = "Expected value after quote, got end of list";
+                quoteFlagSet = false; // for error-ignore parsing
                 return false;
             }
             LispList popResult = listStack.Pop();
@@ -226,7 +246,7 @@ namespace NetLisp.Text
         {
             return new SourceReference(sourceName, newlineCount, Position - lastNewlinePosition, Position);
         }
-        private bool isEndOfInput()
+        public bool IsEndOfInput()
         {
             return Position >= inputText.Length;
         }
@@ -243,5 +263,17 @@ namespace NetLisp.Text
         SyntaxError,
         EndOfExpression,
         EndOfInput
+    }
+    public enum CharacterMapTokenClass
+    {
+        Symbol,
+        Number,
+        String,
+        StringEscaped,
+        OpenParen,
+        CloseParen,
+        Comment,
+        Quote,
+        Whitespace
     }
 }

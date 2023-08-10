@@ -1,0 +1,35 @@
+(require table)
+
+(let (hd (tbnew) htypetable (tbnew) math (require math) maxhandle) (
+  (tbuse math (
+    (setq maxhandle (^ 2 53)) ; largest unbroken range of precise integers that a double can store
+    (let (
+      genhandle (lambda (table val) (
+        (let (handle (randirang 0 maxhandle)) (
+          (if (tbhaskey table handle)
+            (runitback table val)
+            (tbsval table handle val)
+          )
+          (values handle)
+        ))
+      ))
+      gethandletable (lambda (handletype) (
+        (tbgval htypetable handletype)
+      ))
+    ) (
+      (tbsval hd 'newhandletype (lambda () (
+        (genhandle htypetable (tbnew))
+      )))
+      (tbsval hd 'newhandle (lambda (handletype val) (
+        (genhandle (gethandletable handletype) val)
+      )))
+      (tbsval hd 'gethandleval (lambda (handletype handle) (
+        (tbgval (gethandletable handletype) handle)
+      )))
+      (tbsval hd 'freehandle (lambda (handletype handle) (
+        (tbdelkey (gethandletable handletype) handle)
+      )))
+    ))
+  ))
+  (values hd)
+))

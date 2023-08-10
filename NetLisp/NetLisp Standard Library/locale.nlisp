@@ -1,0 +1,55 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (System.Globalization) (
+  (let (
+    localetb (tbnew)
+    handle (require handle)
+    localehandletb (tbnew)
+    lhandletype ()
+    newlhandle ()
+    gethandleci ()
+  ) (
+    (tbuse handle (
+      (setq lhandletype (newhandletype))
+      (setq newlhandle (lambda (cultureinfo) (
+        (newhandle lhandletype cultureinfo)
+      )))
+      (setq gethandleci (lambda (lhandle) (
+        (gethandleval lhandletype lhandle)
+      )))
+    ))
+    (tbsval localetb 'getlocale (lambda (culturestring) (
+      (if (not (tbhaskey localehandletb culturestring))
+        (tbsval localehandletb culturestring (newlhandle (CultureInfo.new culturestring)))
+        ()
+      )
+      (tbgval localehandletb culturestring)
+    )))
+    (tbsval localetb 'threadlocale (lambda () (
+      (let (
+        curculture (CultureInfo:CurrentCulture)
+        curculturename (CultureInfo.Name curculture)
+      ) (
+        (getlocale curculturename)
+      ))
+    )))
+    (tbsval localetb 'sthreadlocale (lambda (lhandle) (
+      (CultureInfo:CurrentCulture (gethandleci lhandle))
+    )))
+    (tbsval localetb 'invariantlocale (lambda () (
+      (getlocale "")
+    )))
+    (tbsval localetb 'supportedlocales (lambda () (
+      (lsmap (CultureInfo:GetCultures CultureTypes.AllCultures) (lambda (cultureinfo) (
+        (CultureInfo.Name cultureinfo)
+      )))
+    )))
+    (tbsval localetb 'dncultureinfofromlhandle (lambda (lhandle) (
+      (gethandleci lhandle)
+    )))
+    ; todo: write more feature and stuff
+    (values localetb)
+  ))
+))

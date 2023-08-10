@@ -1,0 +1,139 @@
+; native defined functions:
+; math.floor, math.ceil, math.round, math.rand, math.^
+
+(require table)
+(require list)
+(require dotnet)
+
+(let (math (require math)) (
+  (tbuse math (
+
+    (tbsval math 'abs (lambda (num) (
+      (if (< num 0)
+        (- 0 num)
+        (values num)
+      )
+    )))
+
+    (tbsval math '% (lambda (num div) (
+      (let (
+        divresult (/ num div)
+        remasfactor (- divresult (floor divresult))
+      ) (
+        (* div remasfactor)
+      ))
+    )))
+
+    (tbsval math 'divrem (lambda (num div) (
+      (let (
+        divresult (/ num div)
+        remasfactor (- divresult (floor divresult))
+      ) (
+        (lsnew divresult (* div remasfactor))
+      ))
+    )))
+
+    (tbsval math 'randrang (lambda (min max) (
+      (let (range (- max min)) (
+        (+ (* (rand) range) min)
+      ))
+    )))
+
+    (tbsval math 'randirang (lambda (min max) (
+      (round ((tbgval math 'randrang) min max))
+    )))
+
+    (tbsval math 'roundx (lambda (num digits base) (
+      (let (exp (^ base digits)) (
+        (/ (round (* num exp)) exp)
+      ))
+    )))
+
+    (tbsval math 'min (lambda (a b) (
+      (if (< a b)
+        a
+        b
+      )
+    )))
+
+    (tbsval math 'max (lambda (a b) (
+      (if (> a b)
+        a
+        b
+      )
+    )))
+
+    (tbsval math 'minlist (lambda (numList) (
+      (if (> (lslen numList) 0)
+        (let (smallest (lsfirst numList)) (
+          (lsiter numList (lambda (num) (
+            (if (< num smallest)
+              (setq smallest num)
+              ()
+            )
+          )))
+          (values smallest)
+        ))
+        ()
+      )
+    )))
+
+    (tbsval math 'maxlist (lambda (numList) (
+      (if (> (lslen numList) 0)
+        (let (greatest (lsfirst numList)) (
+          (lsiter numList (lambda (num) (
+            (if (> num greatest)
+              (setq greatest num)
+              ()
+            )
+          )))
+          (values greatest)
+        ))
+        ()
+      )
+    )))
+
+    (dnuset (dnftype "System.Math" Math) (
+      (tbsval math 'acos (lambda (n) (
+        (Math:Acos n)
+        )))
+      (tbsval math 'acosh (lambda (n) (
+        (Math:Acosh n)
+        )))
+      (tbsval math 'asin (lambda (n) (
+        (Math:Asin n)
+        )))
+      (tbsval math 'asinh (lambda (n) (
+        (Math:Asinh n)
+        )))
+      (tbsval math 'atan (lambda (n) (
+        (Math:Atan n)
+        )))
+      (tbsval math 'atan2 (lambda (y x) (
+        (Math:Atan2 y x)
+        )))
+      (tbsval math 'atanh (lambda (n) (
+        (Math:Atanh n)
+        )))
+      (tbsval math 'justless (lambda (n) (
+        (Math:BitDecrement n)
+        )))
+      (tbsval math 'justgreater (lambda (n) (
+        (Math:BitIncrement n)
+        )))
+      (tbsval math 'cbrt (lambda (n) (
+        (Math:Cbrt n)
+        )))
+      (tbsval math 'cos (lambda (n) (
+        (Math:Cos n)
+        )))
+      (tbsval math 'cosh (lambda (n) (
+        (Math:Cosh n)
+        )))
+      ))
+
+    ()
+  ))
+
+  (values math)
+))

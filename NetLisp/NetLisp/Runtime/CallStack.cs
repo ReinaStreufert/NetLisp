@@ -22,7 +22,26 @@ namespace NetLisp.Runtime
                 return stack.Peek().CalledToken;
             }
         }
-        public LispToken CurrentlyEvaluatingToken { get; internal set; }
+        public bool IsLoopFlagSet
+        {
+            get
+            {
+                if (stack.Count == 0) return false;
+                return stack.Peek().LoopFlag;
+            }
+        }
+        public LispList LoopCallTarget
+        {
+            get
+            {
+                if (!IsLoopFlagSet)
+                {
+                    throw new InvalidOperationException("Loop flag not set");
+                }
+                return stack.Peek().LoopCallTarget;
+            }
+        }
+        public LispToken CurrentlyEvaluatingToken { get; set; }
 
         public void Push(ExecutableLispToken token)
         {
@@ -31,6 +50,26 @@ namespace NetLisp.Runtime
         public void Pop()
         {
             stack.Pop();
+        }
+
+        // set loop flag (runitback) on the first found function in the stack
+        public bool SetLoopFlag(LispList callTarget)
+        {
+            foreach (CallTrace call in stack)
+            {
+                if (call.CalledToken.Type == LispDataType.Function)
+                {
+                    call.LoopFlag = true;
+                    call.LoopCallTarget = callTarget;
+                    return true;
+                }
+            }
+            return false;
+        }
+        // clears loop flag on current caller
+        public void ClearLoopFlag() // expected to be used correctly (check loopflag first)
+        {
+            stack.Peek().LoopFlag = false;
         }
 
         public IEnumerable<CallTrace> AllCallers()

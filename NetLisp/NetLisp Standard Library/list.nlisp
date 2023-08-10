@@ -1,0 +1,102 @@
+; native defined functions:
+; lsnew, lslen, lspush, lspop, lsprep, lstake, lsn, lsinsn, lsdeln
+
+(define lsfirst (lambda (tList) (
+  (lsn tList 0)
+)))
+
+(define lslast (lambda (tList) (
+  (lsn tList (- (lslen tList) 1))
+)))
+
+(define lsconc (lambda (list1 list2) (
+  (if (> (lslen list2) 0)
+    (runitback (lspush list1 (lsfirst list2)) (lstake list2))
+    (values list1)
+  )
+)))
+
+(define lsiterang (lambda (iList iterFunc iStart iLen) (
+  (if (> iLen 0)
+    (
+      (iterFunc (lsn iList iStart))
+      (runitback iList iterFunc (+ iStart 1) (- iLen 1))
+    )
+    (values)
+  )
+)))
+
+(define lsiterevrang (lambda (iList iterFunc iStart iLen) (
+  (if (> iLen 0)
+    (
+      (iterFunc (lsn iList iStart))
+      (runitback iList iterFunc (- iStart 1) (- iLen 1))
+    )
+    (values)
+  )
+)))
+
+(define lsiter (lambda (iList iterFunc) (
+  (lsiterang iList iterFunc 0 (lslen iList))
+)))
+
+(define lsiterev (lambda (iList iterFunc) (
+  (lsiterevrang iList iterFunc (- (lslen iList) 1) (lslen iList))
+)))
+
+(define lsrang (lambda (iList iStart iLen) (
+  (let (rList ()) (
+    (lsiterang iList (lambda (item) (
+      (setq rList (lspush rList item))
+    )) iStart iLen)
+    (values rList)
+  ))
+)))
+
+(define lsdelrang (lambda (dList dStart dLen) (
+  (if (> dLen 0)
+    (runitback (lsdeln dList dStart) dStart (- dLen 1))
+    (values dList)
+  )
+)))
+
+(define lsrepln (lambda (rList n item) (
+  (lsinsn (lsdeln rList n) n item)
+)))
+
+; returns empty list if no result is found
+(define lsfind (lambda (iList item) (
+  (let (i 0) (
+    (lsiter iList (lambda (checkitem) (
+      (if (= item checkitem)
+        (return-from lsfind i)
+        (setq i (+ i 1))
+      )
+    )))
+    (lsnew)
+  ))
+)))
+
+(define lsfindall (lambda (iList item) (
+  (let (i 0 resultList ()) (
+    (lsiter iList (lambda (checkitem) (
+      (if (= item checkitem)
+        (setq resultList (lspush resultList i))
+        ()
+      )
+      (setq i (+ i 1))
+    )))
+    (values resultList)
+  ))
+)))
+
+(define lsmap (lambda (mList mapFunc) (
+  (let (resultList ()) (
+    (lsiter mList (lambda (item) (
+      (setq resultList (lspush resultList (mapFunc item)))
+    )))
+    (values resultList)
+  ))
+)))
+
+() ;list module returns an empty list because it is implemented globally

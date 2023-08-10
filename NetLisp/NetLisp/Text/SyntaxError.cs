@@ -24,6 +24,7 @@ namespace NetLisp.Text
         WrongNumberOfCloseParens,
         UnexpectedEndOfInput,
         NotAList,
-        ExpectedEndOfInput
+        ExpectedEndOfInput,
+        UnrecognizedEscapeSequence
     }
 }

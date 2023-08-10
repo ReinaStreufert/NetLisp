@@ -1,0 +1,52 @@
+(require list)
+(require table)
+(require dotnet)
+
+(let (buf (tbnew) handle (require handle) bhandletype) (
+  (tbuse handle (
+    (setq bhandletype (newhandletype))
+    (tbsval buf 'bhandlefromdnbytearray (lambda (dnba) (
+      (newhandle bhandletype dnba)
+    )))
+    (tbsval buf 'dnbytearrayfrombhandle (lambda (bhandle) (
+      (gethandleval bhandletype bhandle)
+    )))
+    (tbsval buf 'releasebuf (lambda (fhandle) (
+      (freehandle bhandletype bhandle)
+    )))
+  ))
+  (dnuset (dnftype "System.Array") Array (
+    (dnuset (dnftype "System.Byte") Byte (
+      (setq Array:CreateInstance (dnexactreturn Array:CreateInstance))
+      (let (
+        newbhandle (tbgval buf 'bhandlefromdnbytearray)
+        gethandlear (tbgval buf 'dnbytearrayfrombhandle)
+      ) (
+        (tbsval buf 'createbuf (lambda (length) (
+          (newbhandle (Array:CreateInstance Byte length))
+        )))
+        (tbsval buf 'buflen (lambda (bhandle) (
+          (Array.Length (gethandlear bhandle))
+        )))
+        (tbsval buf 'bufgindex (lambda (bhandle index) (
+          (Array.GetValue (gethandlear bhandle) index)
+        )))
+        (tbsval buf 'bufsindex (lambda (bhandle index val) (
+          (Array.SetValue (gethandlear bhandle) (dnbridgecast val Byte) index)
+        )))
+        (tbsval buf 'bufcopy (lambda (srchandle srcindex desthandle destindex len) (
+          (Array.Copy (gethandlear srchandle) srcindex (gethandlear desthandle) destindex len)
+        )))
+        (tbsval buf 'bufcopyl (lambda (handle index len) (
+          ((lambda (list copyi copylen arr) (
+            (if (> copylen 0)
+              (runitback (lspush list (Array.GetValue arr copyi)) (+ copyi 1) (- copylen 1) arr)
+              (values list)
+            )
+          )) () index len (gethandlear handle))
+        )))
+      ))
+    ))
+  ))
+  (values buf)
+))

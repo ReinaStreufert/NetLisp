@@ -3,6 +3,7 @@ using NetLisp.Runtime;
 using NetLisp.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -50,6 +51,16 @@ namespace NetLisp.Data
                 defValue.SourceLocation = SourceLocation;
                 yield return defValue;
             }
+        }
+
+        public override bool CompareValue(LispToken token)
+        {
+            return (token.Type == LispDataType.Symbol && ((LispSymbol)token).Value == Value);
+        }
+
+        public override int HashValue()
+        {
+            return value.GetHashCode() + 1;
         }
 
         public override string ToString()

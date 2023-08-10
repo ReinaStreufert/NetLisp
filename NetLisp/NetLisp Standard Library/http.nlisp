@@ -1,0 +1,131 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnloadasm "System.Net.Http")
+(dnuse (System System.Net.Http System.Net.Http.Headers System.Collections System.Collections.Generic System.Threading.Tasks) (
+  (let (
+    http (tbnew)
+    httpClient (HttpClient.new)
+    HeaderValueT (dngenerict IEnumerable`1 String)
+    HeaderPairT (dngenerict KeyValuePair`2 String HeaderValueT)
+    HeaderEnumeratorT (dngenerict IEnumerator`1 HeaderPairT)
+    HeaderValEnumeratorT (dngenerict IEnumerator`1 String)
+    String[] (dnftype "System.String[]")
+    Byte[] (dnftype "System.Byte[]")
+    Task<string>T (dngenerict Task`1 String)
+    Task<byte[]>T (dngenerict Task`1 Byte[])
+    Task<HttpResponseMessage>T (dngenerict Task`1 HttpResponseMessage)
+    buffer (require buffer)
+    async (require async)
+    alambda (tbgval async 'alambda)
+    buildheadertable ()
+    copyheadertable ()
+    ; complicated af
+  ) (
+    ; this is kind of ridiculous. write dnusetm?
+    (dnuset HeaderEnumeratorT HeaderEnumerator (
+      (dnuset HeaderPairT HeaderPair (
+        (dnuset HeaderValueT HeaderValue (
+          (dnuset HeaderValEnumeratorT HeaderValEnumerator (
+            (setq HeaderPair.Value (dnexactreturn HeaderPair.Value))
+
+            (setq buildheadertable (lambda (headers) (
+              (let (
+                result (tbnew)
+                enumerator (HttpHeaders.GetEnumerator headers)
+                enumerate (lambda (getcurrent inst builtlist) (
+                  (if (IEnumerator.MoveNext inst)
+                    (runitback getcurrent inst (lspush builtlist (getcurrent inst)))
+                    (values builtlist)
+                  )
+                ))
+                pairs (enumerate HeaderEnumerator.Current enumerator ())
+              ) (
+                (lsiter pairs (lambda (pair) (
+                  (tbsval result (HeaderPair.Key pair)
+                    (enumerate HeaderValEnumerator.Current (HeaderValue.GetEnumerator (HeaderPair.Value pair)) ()))
+                )))
+                (values result)
+              ))
+            )))
+            (setq copyheadertable (lambda (headertb headers) (
+              (HttpHeaders.Clear headers)
+              (lsiter (tbpairs headertb) (lambda (pair) (
+                (HttpHeaders.Add headers (lsfirst pair) (dnbridgecast (lslast pair) String[]))
+              )))
+              (returnvalues)
+            )))
+
+            (tbsval http 'getreqheadertb (lambda () (
+              (buildheadertable (HttpClient.DefaultRequestHeaders httpClient))
+            )))
+            (tbsval http 'setreqheadertb (lambda (headertb) (
+              (copyheadertable headertb (HttpClient.DefaultRequestHeaders httpClient))
+            )))
+          ))
+        ))
+      ))
+    ))
+    (tbsval http 'greqtimeout (lambda () (
+      (TimeSpan.TotalMilliseconds (HttpClient.Timeout httpClient))
+    )))
+    (tbsval http 'sreqtimeout (lambda (ms) (
+      (HttpClient.Timeout httpClient (TimeSpan.FromMilliseconds ms))
+    )))
+    (dnuset Task<HttpResponseMessage>T Task<HttpResponseMessage> (
+      (dnuset Task<string>T Task<string> (
+        (dnuset Task<byte[]>T Task<byte[]> (
+          (setq Task<byte[]>.Result (dnexactreturn Task<byte[]>.Result))
+          (let (httpget ()) (
+            (setq httpget (lambda (uri) (
+              (let (task (HttpClient.GetAsync httpClient uri)) (
+                (Task.Wait task)
+                (let (
+                  responsetb (tbnew)
+                  dnresponse (Task<HttpResponseMessage>.Result task)
+                  dncontent (HttpResponseMessage.Content dnresponse)
+                ) (
+                  (tbsval responsetb 'status (HttpResponseMessage.StatusCode dnresponse))
+                  (tbsval responsetb 'success? (HttpResponseMessage.IsSuccessStatusCode dnresponse))
+                  (tbsval responsetb 'responseheadertb (buildheadertable (HttpResponseMessage.Headers dnresponse)))
+                  (tbsval responsetb 'contentheadertb (buildheadertable (HttpContent.Headers dncontent)))
+                  (tbsval responsetb 'readcontentstr (lambda () (
+                    (setq task (HttpContent.ReadAsStringAsync dncontent))
+                    (Task.Wait task)
+                    (Task<string>.Result task)
+                  )))
+                  (tbsval responsetb 'readcontentstrasync (alambda () (
+                    (let (atask (HttpContent.ReadAsStringAsync dncontent)) (
+                      (Task.Wait atask)
+                      (Task<string>.Result atask)
+                    ))
+                  )))
+                  (tbsval responsetb 'readcontentbuf (lambda () (
+                    (setq task (HttpContent.ReadAsByteArrayAsync dncontent))
+                    (Task.Wait task)
+                    ((tbgval buffer 'bhandlefromdnbytearray) (Task<byte[]>.Result task))
+                  )))
+                  (tbsval responsetb 'readcontentbufasync (alambda () (
+                    (let (atask (HttpContent.ReadAsByteArrayAsync dncontent)) (
+                      (Task.Wait atask)
+                      ((tbgval buffer 'bhandlefromdnbytearray) (Task<byte[]>.Result atask))
+                    ))
+                  )))
+                  (values responsetb)
+                ))
+              ))
+            )))
+            (tbsval http 'httpget httpget)
+            (tbsval http 'httpgetasync (alambda (uri) (
+              (httpget uri)
+            )))
+          ))
+        ))
+      ))
+    ))
+    (values http)
+  ))
+))
+
+; todo: httppost, httpput, httpdelete

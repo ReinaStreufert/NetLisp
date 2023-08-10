@@ -13,16 +13,26 @@ namespace NetLisp.Data
         public override LispDataType Type => LispDataType.Number;
         public override bool TypeCanBeExecuted => false;
 
-        public LispNumber(float val)
+        public LispNumber(double val)
         {
             this.Value = val;
         }
 
-        public float Value { get; set; } = 0F;
+        public double Value { get; set; } = 0F;
 
         public override IEnumerable<LispToken> Evaluate(RuntimeContext runtimeContext)
         {
             yield return new LispNumber(Value) { SourceLocation = SourceLocation };
+        }
+
+        public override bool CompareValue(LispToken token)
+        {
+            return (token.Type == LispDataType.Number && ((LispNumber)token).Value == Value);
+        }
+
+        public override int HashValue()
+        {
+            return Value.GetHashCode();
         }
 
         public override string ToString()

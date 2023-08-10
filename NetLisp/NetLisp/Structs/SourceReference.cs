@@ -9,9 +9,9 @@ namespace NetLisp.Structs
     public struct SourceReference
     {
         public string SourceName { get; set; } = "";
-        public int Line { get; set; }
-        public int Column { get; set; }
-        public int Position { get; set; }
+        public int Line { get; set; } // stored zero-based
+        public int Column { get; set; } // stored zero-based
+        public int Position { get; set; } // raw zero-based character position in the file including \n and \r chars
         public SourceReference(string sourceName, int line, int column, int position)
         {
             SourceName = sourceName;
@@ -23,10 +23,10 @@ namespace NetLisp.Structs
         {
             if (SourceName == "")
             {
-                return "(" + Line.ToString() + "," + Column + ")";
+                return "(" + (Line + 1).ToString() + "," + (Column + 1) + ")";
             } else
             {
-                return "(" + SourceName + " " + Line.ToString() + "," + Column + ")";
+                return "(" + SourceName + " " + (Line + 1).ToString() + "," + (Column + 1) + ")";
             }
         }
     }

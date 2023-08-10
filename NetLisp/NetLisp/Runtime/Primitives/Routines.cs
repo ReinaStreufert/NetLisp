@@ -7,33 +7,33 @@ using System.Threading.Tasks;
 
 namespace NetLisp.Runtime.Primitives
 {
-    abstract class RoutineGenerator : LispSpecialForm
+    public abstract class RoutineGenerator : LispSpecialForm
     {
         public override bool EvaluateArguments => false;
 
-        protected abstract LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, RuntimeContext runtimeContext);
+        protected abstract LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, ArgumentDefinedMetadata metadata, RuntimeContext runtimeContext);
 
         protected override IEnumerable<LispToken> InnerExecute(List<LispToken> passedArgs, RuntimeContext runtimeContext, LispList entireTarget)
         {
-            if (passedArgs.Count != 2)
+            if (passedArgs.Count < 2 || passedArgs.Count > 3)
             {
-                runtimeContext.RaiseRuntimeError(entireTarget, RuntimeErrorType.ArgumentMismatchError, "Expected 2 arguments");
+                runtimeContext.RaiseRuntimeError(entireTarget, RuntimeErrorType.ArgumentMismatchError, "Expected 2 or 3 arguments");
             }
-            LispToken lambdaArgList = passedArgs[0];
-            LispToken lambdaBody = passedArgs[1];
-            if (lambdaArgList.Type != LispDataType.List)
+            LispList argList = runtimeContext.Assert<LispList>(passedArgs[0], LispDataType.List);
+            LispList? metadataBody;
+            LispList body;
+            if (passedArgs.Count > 2)
             {
-                runtimeContext.RaiseRuntimeError(lambdaArgList, RuntimeErrorType.ArgumentMismatchError, "Expected list got " + lambdaArgList.Type.ToString().ToLower());
-            }
-            if (lambdaBody.Type != LispDataType.List)
+                metadataBody = runtimeContext.Assert<LispList>(passedArgs[1], LispDataType.List);
+                body = runtimeContext.Assert<LispList>(passedArgs[2], LispDataType.List);
+            } else
             {
-                runtimeContext.RaiseRuntimeError(lambdaBody, RuntimeErrorType.ArgumentMismatchError, "Expected list got " + lambdaBody.Type.ToString().ToLower());
+                metadataBody = null;
+                body = runtimeContext.Assert<LispList>(passedArgs[1], LispDataType.List);
             }
-            LispList castedArgList = (LispList)lambdaArgList;
-            LispList castedBody = (LispList)lambdaBody;
-            LispSymbol[] args = new LispSymbol[castedArgList.Items.Count];
+            LispSymbol[] args = new LispSymbol[argList.Items.Count];
             int argsI = 0;
-            foreach (LispToken token in castedArgList.Items)
+            foreach (LispToken token in argList.Items)
             {
                 if (token.Type == LispDataType.Symbol)
                 {
@@ -44,21 +44,26 @@ namespace NetLisp.Runtime.Primitives
                     runtimeContext.RaiseRuntimeError(token, RuntimeErrorType.ArgumentMismatchError, "Expected symbol got " + token.Type.ToString().ToLower());
                 }
             }
-            yield return ConstructRoutine(new LispExecutableBody(castedBody), args, runtimeContext);
+            ArgumentDefinedMetadata? metadata = null;
+            if (metadataBody != null)
+            {
+                metadata = ArgumentDefinedMetadata.Parse(runtimeContext, args, metadataBody);
+            }
+            yield return ConstructRoutine(new LispExecutableBody(body), args, metadata, runtimeContext);
         }
     }
     class Lambda : RoutineGenerator
     {
-        protected override LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, RuntimeContext runtimeContext)
+        protected override LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, ArgumentDefinedMetadata metadata, RuntimeContext runtimeContext)
         {
-            return new LispFunction(body, ScopeStack.ConstructFromScope(runtimeContext.Scopes.CurrentScope), args);
+            return new LispFunction(body, ScopeStack.ConstructFromScope(runtimeContext.Scopes.CurrentScope), metadata, args);
         }
     }
     class Macro : RoutineGenerator
     {
-        protected override LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, RuntimeContext runtimeContext)
+        protected override LispToken ConstructRoutine(ExecutableBody body, LispSymbol[] args, ArgumentDefinedMetadata metadata, RuntimeContext runtimeContext)
         {
-            return new LispMacro(body, args);
+            return new LispMacro(body, ScopeStack.ConstructFromScope(runtimeContext.Scopes.CurrentScope), metadata, args);
         }
     }
 }

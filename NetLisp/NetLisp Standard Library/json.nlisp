@@ -1,0 +1,120 @@
+(require list)
+(require table)
+;(require text)
+(require dotnet)
+
+(dnuse (System Newtonsoft.Json.Linq System.Collections System.Collections.Generic) (
+  (let (
+    json (tbnew)
+    tokenconvertertable (tbnew)
+    jtokentolisp ()
+    lisptojtoken ()
+    valuetokenconverter ()
+    tokenvalueconverter ()
+    JsonObjectPairT (dngenerict KeyValuePair`2 String JToken)
+    JsonObjectEnumeratorT (dngenerict IEnumerator`1 JsonObjectPairT)
+    JsonArrayEnumeratorT (dngenerict IEnumerator`1 JToken)
+  ) (
+    (setq JToken:Parse (dnexactreturn JToken:Parse))
+    (setq jtokentolisp (lambda (jtoken) (
+      ;(printstr (txfromnum (JToken.Type jtoken)))
+      ((tbgval tokenconvertertable (JToken.Type jtoken)) jtoken)
+    )))
+    (setq lisptojtoken (lambda (value) (
+      (let (valtype (typestr value)) (
+        (if (tbhaskey tokenconvertertable valtype)
+          ((tbgval tokenconvertertable valtype) value)
+          (values (JValue.new valtype))
+        )
+      ))
+    )))
+    ; begin newtonsoft.json -> lisp converters
+    (dnuset JsonObjectPairT JsonObjectPair (
+      (dnuset JsonObjectEnumeratorT JsonObjectEnumerator (
+        (setq JsonObjectPair.Value (dnexactreturn JsonObjectPair.Value))
+        (tbsval tokenconvertertable JTokenType.Object (lambda (jobject) (
+          (let (
+            objtb (tbnew)
+            enumerator (JObject.GetEnumerator jobject)
+          ) (
+            ((lambda () (
+              (if (IEnumerator.MoveNext enumerator)
+                (let (pair (JsonObjectEnumerator.Current enumerator)) (
+                  (tbsval objtb (JsonObjectPair.Key pair) (jtokentolisp (JsonObjectPair.Value pair)))
+                  (runitback)
+                ))
+                (values objtb)
+              )
+            )) )
+          ))
+        )))
+      ))
+    ))
+    (dnuset JsonArrayEnumeratorT JsonArrayEnumerator (
+      (setq JsonArrayEnumerator.Current (dnexactreturn JsonArrayEnumerator.Current))
+      (tbsval tokenconvertertable JTokenType.Array (lambda (jarray) (
+        (let (
+          arrlist (lsnew)
+          enumerator (JArray.GetEnumerator jarray)
+        ) (
+          ((lambda () (
+            (if (IEnumerator.MoveNext enumerator)
+              (let (item (JsonArrayEnumerator.Current enumerator)) (
+                (setq arrlist (lspush arrlist (jtokentolisp item)))
+                (runitback)
+              ))
+              (values arrlist)
+            )
+          )) )
+        ))
+      )))
+    ))
+    (tbsval tokenconvertertable JTokenType.Null (lambda (jnull) (
+      (lsnew)
+    )))
+    (setq tokenvalueconverter (lambda (jtoken) (
+      (JValue.Value jtoken)
+    )))
+    (tbsval tokenconvertertable JTokenType.Boolean tokenvalueconverter)
+    (tbsval tokenconvertertable JTokenType.String tokenvalueconverter)
+    (tbsval tokenconvertertable JTokenType.Float tokenvalueconverter)
+    (tbsval tokenconvertertable JTokenType.Integer tokenvalueconverter)
+    ; begin lisp -> newtonsoft.json converters
+    (tbsval tokenconvertertable tbtypestr (lambda (table) (
+      (let (jobject (JObject.new)) (
+        (lsiter (tbpairs table) (lambda (pair) (
+          (let (key (lsfirst pair) value (lslast pair)) (
+            (if (= (typestr key) "string")
+              (JObject.Add jobject key (lisptojtoken value))
+              ()
+            )
+          ))
+        )))
+        (values jobject)
+      ))
+    )))
+    (tbsval tokenconvertertable "list" (lambda (list) (
+      (let (jarray (JArray.new)) (
+        (lsiter list (lambda (item) (
+          (JArray.Add jarray (lisptojtoken item))
+        )))
+        (values jarray)
+      ))
+    )))
+    (setq valuetokenconverter (lambda (val) (
+      (JValue.new val)
+    )))
+    (tbsval tokenconvertertable "boolean" valuetokenconverter)
+    (tbsval tokenconvertertable "string" valuetokenconverter)
+    (tbsval tokenconvertertable "number" valuetokenconverter)
+    ; begin public functions
+    (tbsval json 'lispify (lambda (jstr) (
+      (jtokentolisp (JToken:Parse jstr))
+    )))
+    (tbsval json 'stringify (lambda (structure) (
+      (Object.ToString (lisptojtoken structure))
+    )))
+
+    (values json)
+  ))
+))

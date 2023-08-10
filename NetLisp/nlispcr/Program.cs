@@ -1,34 +1,19 @@
-﻿using NetLisp;
-using NetLisp.Runtime;
-using NetLisp.Data;
-using NetLisp.Text;
+﻿using nlispcr;
 
-RuntimeContext runtimeContext = new RuntimeContext();
-runtimeContext.SyntaxError += syntaxError;
-runtimeContext.RuntimeError += runtimeError;
-
-Random r = new Random();
-
-while (true)
+NlispcrCommandLineParser commandLineArgs = new NlispcrCommandLineParser();
+if (!commandLineArgs.ParseSwitches())
 {
-    Console.Write("=>");
-    string expr = Console.ReadLine();
-    string sourceName = "[cons" + r.Next(ushort.MaxValue) + "]";
-    IEnumerable<LispToken> evalResults = runtimeContext.EvaluateExpressions(expr, sourceName);
-    if (evalResults != null)
+    HelpDisplay.Start();
+} else
+{
+    if (commandLineArgs.Help)
     {
-        foreach (LispToken evalResult in evalResults)
-        {
-            Console.WriteLine("==>" + evalResult.ToString());
-        }
+        HelpDisplay.Start();
+    } else if (commandLineArgs.Version)
+    {
+        VersionDisplay.Start();
+    } else
+    {
+        SourceExecution.Start(commandLineArgs);
     }
-}
-
-void syntaxError(SyntaxError err)
-{
-    Console.WriteLine(err.ToString());
-}
-void runtimeError(RuntimeError err)
-{
-    Console.WriteLine(err.ToString());
 }

@@ -25,6 +25,16 @@ namespace NetLisp.Data
             yield return new LispBoolean(Value) { SourceLocation = SourceLocation };
         }
 
+        public override bool CompareValue(LispToken token)
+        {
+            return (token.Type == LispDataType.Boolean && ((LispBoolean)token).Value == Value);
+        }
+
+        public override int HashValue()
+        {
+            return Value.GetHashCode();
+        }
+
         public override string ToString()
         {
             return "." + Value.ToString().ToLower() + ".";

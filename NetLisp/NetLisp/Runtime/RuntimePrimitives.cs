@@ -1,4 +1,5 @@
-﻿using NetLisp.Runtime.Primitives;
+﻿using NetLisp.Data;
+using NetLisp.Runtime.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,11 +26,20 @@ namespace NetLisp.Runtime
             globalScope.Define("not", new Not());
             globalScope.Define("or", new Or());
             globalScope.Define("and", new And());
-            globalScope.Define("if", FlowNativeMacros.CreateIfMacro());
-        }
-        public static void DefineDotNetRoutines(Scope globalScope)
-        {
+            globalScope.Define("if", FlowNativeMacros.CreateIfMacro(globalScope));
+            globalScope.Define("values", new Values());
+            globalScope.Define("runitback", new Runitback());
+            globalScope.Define("returnvalues", new ReturnValues());
+            globalScope.Define("let", new Let());
+            globalScope.Define("return-from", new ReturnFrom());
+            globalScope.Define("quote", new Quote());
+            globalScope.Define("require", new Require());
+            globalScope.Define("load", new Load());
+            globalScope.Define("typestr", new TypeStr());
+            globalScope.Define("printstr", new PrintStr());
 
+            globalScope.Define("true", new LispBoolean(true));
+            globalScope.Define("false", new LispBoolean(false));
         }
     }
 }

@@ -40,6 +40,53 @@ namespace NetLisp.Runtime
             result.stack = constructedStack;
             return result;
         }
+        public static ScopeStack Combine(ScopeStack scopeStack1, ScopeStack scopeStack2)
+        {
+            ScopeStack combined = new ScopeStack();
+            combined.stack.Clear();
+            IEnumerator<Scope> scopeStack1Enum = scopeStack1.AllScopes().Reverse().GetEnumerator();
+            bool stack1End = false;
+            IEnumerator<Scope> scopeStack2Enum = scopeStack2.AllScopes().Reverse().GetEnumerator();
+            bool stack2End = false;
+
+            while (!stack1End || !stack2End)
+            {
+                if (!stack1End)
+                {
+                    if (scopeStack1Enum.MoveNext())
+                    {
+                        Scope scope = scopeStack1Enum.Current;
+                        if (combined.stack.Count > 0)
+                        {
+                            Scope linkedScope = Scope.CreateInheritingScope(combined.CurrentScope);
+                            Scope.LinkScopes(scope, linkedScope);
+                            combined.stack.Push(linkedScope);
+                        }
+                        else
+                        {
+                            combined.stack.Push(scopeStack1.GlobalScope);
+                        }
+                    } else
+                    {
+                        stack1End = true;
+                    }
+                }
+                if (!stack2End)
+                {
+                    if (scopeStack2Enum.MoveNext())
+                    {
+                        Scope scope = scopeStack2Enum.Current;
+                        Scope linkedScope = Scope.CreateInheritingScope(combined.CurrentScope);
+                        Scope.LinkScopes(scope, linkedScope);
+                        combined.stack.Push(linkedScope);
+                    } else
+                    {
+                        stack2End = true;
+                    }
+                }
+            }
+            return combined;
+        }
 
         public Scope GlobalScope
         {
@@ -72,7 +119,7 @@ namespace NetLisp.Runtime
         public ScopeStack Copy()
         {
             ScopeStack copy = new ScopeStack();
-            foreach (Scope scope in AllScopes())
+            foreach (Scope scope in AllScopes().Reverse())
             {
                 copy.stack.Push(scope);
             }

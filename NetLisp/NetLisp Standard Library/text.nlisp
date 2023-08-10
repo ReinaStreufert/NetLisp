@@ -1,0 +1,315 @@
+; native defined functions:
+; txlen, txconc, txrang
+
+(require list)
+(require table)
+
+(define txfirst (lambda (str) (
+  (txrang str 0 1)
+)))
+
+(define txlast (lambda (str) (
+  (txrang str (- (txlen str) 1) 1)
+)))
+
+; super important note: this was very difficult and annoying and frustrating to write. im still only 99% sure
+; that it functions correctly in every case. i dont think i can ever be a hundred with this fucking bullshit
+(define txsplit (lambda (str delim) (
+  (let (
+    i 0
+    strlen (txlen str)
+    dlen (txlen delim)
+    nextitem (lambda (builtstr) (
+      (if (> (+ i dlen) strlen)
+        (if (< i strlen)
+          (
+            (setq i (+ i 1))
+            (runitback (txconc builtstr (txrang str (- i 1) 1)))
+          )
+          (lslast (
+            (setq i (+ i 1))
+            (values builtstr)
+          ))
+        )
+        (values (let (strang (txrang str i dlen)) (
+          (setq i (+ i 1))
+          (if (= strang delim)
+            (setq i (+ i (- dlen 1)))
+            (runitback (txconc builtstr (txfirst strang)))
+          )
+          (values builtstr)
+        )))
+      )
+    )))
+    (
+      (
+        (lambda (resultList) (
+          (if (> i strlen)
+            (values resultList)
+            (runitback (lspush resultList (nextitem "")))
+          )
+        )
+      ) ())
+    )
+  )
+)))
+
+(define txtrims (lambda (str trimchar) (
+  (if (> (txlen str) 0)
+    (if (= (txfirst str) trimchar)
+      (runitback (txrang str 1 (- (txlen str) 1) ) trimchar)
+      (values str)
+    )
+    (values str)
+  )
+)))
+
+(define txtrime (lambda (str trimchar) (
+  (if (> (txlen str) 0)
+    (if (= (txlast str) trimchar)
+      (runitback (txrang str 0 (- (txlen str) 1) ) trimchar)
+      (values str)
+    )
+    (values str)
+  )
+)))
+
+(define txrepl (lambda (str searchstr replstr) (
+  (let (strsplit (txsplit str searchstr) builtstr "") (
+    (lsiterang strsplit (lambda (item) (
+      (setq builtstr (txconc builtstr (txconc item replstr)))
+    )) 0 (- (lslen strsplit) 1))
+    (txconc builtstr (lslast strsplit))
+  ))
+)))
+
+(define txiterc (lambda (str iterFunc) (
+  (let (strlen (txlen str)) (
+    ((lambda (i) (
+      (if (< i strlen)
+        (
+          (iterFunc (txrang str i 1))
+          (runitback (+ i 1))
+        )
+        (values)
+      )
+    )) 0)
+  ))
+)))
+
+(define txiterevc (lambda (str iterFunc) (
+  (let (strlen (txlen str)) (
+    ((lambda (i) (
+      (if (> i -1)
+        (
+          (iterFunc (txrang str i 1))
+          (runitback (- i 1))
+        )
+        (values)
+      )
+    )) (- strlen 1))
+  ))
+)))
+
+(define txconclist (lambda (list) (
+  (let (builtstr "") (
+    (lsiter list (lambda (str) (
+      (setq builtstr (txconc builtstr str))
+    )))
+    (values builtstr)
+  ))
+)))
+
+(let (digitlist (lsnew "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F") math (require math)) (
+  (tbuse math (
+    ;big ass function
+    (define txfromnumx (lambda (num base decdigits) (
+      (let (
+        absnum (abs num)
+        roundnum (if (< decdigits 0) absnum (roundx absnum decdigits base))
+        intpart (floor roundnum)
+        decpart (- roundnum intpart)
+        builtstr ""
+        inttostr (lambda (int str) (
+          (if (> int 0)
+            (let (
+              divbase (/ int base)
+              newint (floor divbase)
+              digit (* (- divbase newint) base)
+            ) (
+              (runitback newint (txconc (lsn digitlist digit) str))
+            ))
+            (values str)
+          )
+        ))
+        dectostr (lambda (dec builtdigits i) (
+          (if (and (> dec 0) (or (< decdigits 0) (< i decdigits)))
+            (let (
+              mulbase (* dec base)
+              digit (floor mulbase)
+              newdec (- mulbase digit)
+            ) (
+              (if (not (or (< decdigits 0) (< (+ i 1) decdigits)))
+                (setq digit (round mulbase)) ; last digit should round instead of floor
+                ()
+              )
+              (runitback newdec (lspush builtdigits digit) (+ i 1))
+            ))
+            (let (overflow false n (- (lslen builtdigits) 1)) (
+              ; resolve overflow from decdigit limit rounding if it exists
+              (if (> (lslast builtdigits) (- base 1))
+                (lsiterev builtdigits (lambda (d) (
+                  (if overflow
+                    (
+                      (setq d (+ d 1))
+                      (setq overflow false)
+                    )
+                    ()
+                  )
+                  (if (> d (- base 1))
+                    (
+                      (setq d 0)
+                      (setq overflow true)
+                    )
+                    ()
+                  )
+                  (setq builtdigits (lsrepln builtdigits n d))
+                  (setq n (- n 1))
+                )))
+                ()
+              )
+              (txtrime (txconclist (lsmap builtdigits (lambda (d) (
+                (lsn digitlist d)
+              )))) "0")
+            ))
+          )
+        ))
+        intpartstr ""
+        prefixstr ""
+      ) (
+        (if (< num 0)
+          (setq prefixstr "-")
+          (setq prefixstr "")
+        )
+        (if (> intpart 0)
+          (setq intpartstr (inttostr intpart ""))
+          (setq intpartstr "0") ; inttostr returns "" for 0, which is undesirable for the integer part
+        )
+        (if (> decpart 0)
+          (txconc prefixstr (txconc intpartstr (txconc "." (dectostr decpart () 0))))
+          (txconc prefixstr intpartstr)
+        )
+      ))
+    )))
+
+    ; returns empty list if parse failed.
+    (define txtonumx (lambda (str base) (
+      (let (
+        parsednum 0
+        decmode false
+        decdigits 0
+        isneg false
+      ) (
+        (if (= (txfirst str) "-")
+          (
+            (setq isneg true)
+            (setq str (txrang str 1 (- (txlen str) 1)))
+          )
+          ()
+        )
+        (txiterc str (lambda (char) (
+          (if (= char ".")
+            (if decmode
+              (return-from txtonumx (lsnew))
+              (setq decmode true)
+            )
+            (let (digit (lsfind digitlist char)) (
+              (if (= digit ()) ; check if the digit was not found
+                (return-from txtonumx (lsnew))
+                ()
+              )
+              (if (< digit base)
+                (setq parsednum (+ (* parsednum base) digit))
+                (return-from txtonumx (lsnew))
+              )
+              (if decmode
+                (setq decdigits (+ decdigits 1))
+                ()
+              )
+            ))
+          )
+        )))
+        (if (> decdigits 0)
+          (setq parsednum (/ parsednum (^ base decdigits)))
+          ()
+        )
+        (if isneg
+          (- 0 parsednum)
+          (values parsednum)
+        )
+      ))
+    )))
+  ))
+))
+
+(define txfromnum (lambda (num) (
+  (txfromnumx num 10 -1) ; -1 indicates to not specify a decimal digit limit
+)))
+
+; returns empty string if invalid
+(define txtonum (lambda (str) (
+  (txtonumx str 10)
+)))
+
+(define txrepeat (lambda (str count) (
+  ((lambda (builtstr i) (
+    (if (> i 0)
+      (runitback (txconc builtstr str) (- i 1))
+      (values builtstr)
+    )
+  )) "" count)
+)))
+
+(define txreplchars (lambda (str repltable) (
+  (let (
+    builtstr ""
+    ) (
+    (txiterc str (lambda (iterchar) (
+      (if (tbhaskey repltable iterchar)
+        (setq iterchar (tbgval repltable iterchar))
+        ()
+        )
+      (setq builtstr (txconc builtstr iterchar))
+      )))
+    (values builtstr)
+    ))
+  )))
+
+(let (
+  lowlist (lsnew "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
+  "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z")
+  upplist (lsnew "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L"
+  "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z")
+  lowertable (tbnew)
+  uppertable (tbnew)
+  alphlen 26
+  ) (
+  ((lambda (i) (
+    (if (< i alphlen)
+      (
+        (tbsval lowertable (lsn upplist i) (lsn lowlist i))
+        (tbsval uppertable (lsn lowlist i) (lsn upplist i))
+        (runitback (+ i 1))
+        )
+      ()
+      )
+    )) 0)
+  (define txupper (lambda (str) (
+    (txreplchars str uppertable)
+    )))
+  (define txlower (lambda (str) (
+    (txreplchars str lowertable)
+    )))
+  ))
+
+() ;text module returns an empty list because it is implemented globally

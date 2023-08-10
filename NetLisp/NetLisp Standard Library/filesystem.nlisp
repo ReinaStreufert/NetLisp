@@ -1,0 +1,203 @@
+(require list)
+(require text)
+(require table)
+(require dotnet)
+
+(let (fs (tbnew) handle (require handle) buffer (require buffer) fhandletype) (
+  ; import necessary dotnet components using LDNB
+  (dnuse (System System.IO) (
+    (setq File:ReadAllBytes (dnexactreturn File:ReadAllBytes))
+    (tbsval fs 'subfiles (lambda (path) (
+      (Directory:GetFiles path)
+    )))
+    (tbsval fs 'subdirs (lambda (path) (
+      (Directory:GetDirectories path)
+    )))
+    (tbsval fs 'workdir (lambda () (
+      (Environment:CurrentDirectory)
+    )))
+    (tbsval fs 'sworkdir (lambda (path) (
+      (Environment:CurrentDirectory path)
+    )))
+    (tbsval fs 'fexists? (lambda (path) (
+      (File:Exists path)
+    )))
+    (tbsval fs 'finfotb (lambda (path) (
+      (let (finfo (FileInfo.new path) infotb (tbnew)) (
+        (tbsval infotb 'size (FileInfo.Length finfo))
+        (tbsval infotb 'lastmodified (DateTime.Ticks (FileInfo.LastWriteTime finfo)))
+        (tbsval infotb 'fullpath (FileInfo.FullName finfo))
+        (values infotb)
+      ))
+    )))
+    (tbsval fs 'dexists? (lambda (path) (
+      (Directory:Exists path)
+    )))
+    (tbsval fs 'dinfotb (lambda (path) (
+      (let (dinfo (DirectoryInfo.new path) infotb (tbnew)) (
+        (tbsval infotb 'lastmodified (DateTime.Ticks (DirectoryInfo.LastWriteTime dinfo)))
+        (tbsval infotb 'fullpath (DirectoryInfo.FullName dinfo))
+        (values infotb)
+      ))
+    )))
+    (tbsval fs 'movef (lambda (path newPath) (
+      (File:Move path newPath true)
+    )))
+    (tbsval fs 'moved (lambda (path newPath) (
+      (Directory:Move path newPath)
+    )))
+    (tbsval fs 'deletef (lambda (path) (
+      (File:Delete path)
+    )))
+    (tbsval fs 'deleted (lambda (path) (
+      (Directory:Delete path true)
+    )))
+    (tbsval fs 'createpath (lambda (path) (
+      (Directory:CreateDirectory path)
+      (returnvalues)
+    )))
+    (tbsval fs 'copyf (lambda (path newPath) (
+      (File:Copy path newPath true)
+    )))
+    (tbsval fs 'copydr (lambda (path newPath) (
+      (let (
+        subfiles (tbgval fs 'subfiles)
+        subdirs (tbgval fs 'subdirs)
+        copyf (tbgval fs 'copyf)
+        copydr (tbgval fs 'copydr)
+        createpath (tbgval fs 'createpath)
+        pathname (tbgval fs 'pathname)
+        pathconc (tbgval fs 'pathconc)
+        subdirList (subdirs path)
+        subfileList (subfiles path)
+      ) (
+        (createpath newPath)
+        (lsiter subfileList (lambda (filepath) (
+          (copyf filepath (pathconc newPath (pathname filepath)))
+        )))
+        (lsiter subdirList (lambda (dirpath) (
+          (copydr dirpath (pathconc newPath (pathname dirpath)))
+        )))
+      ))
+    )))
+    (tbuse buffer (
+      (tbsval fs 'reada (lambda (path) (
+        (bhandlefromdnbytearray (File:ReadAllBytes path))
+      )))
+      (tbsval fs 'writea (lambda (path bhandle) (
+        (File:WriteAllBytes path (dnbytearrayfrombhandle bhandle))
+      )))
+    ))
+    (tbsval fs 'readatx (lambda (path) (
+      (File:ReadAllText path)
+    )))
+    (tbsval fs 'writeatx (lambda (path text) (
+      (File:ReadAllText path text)
+    )))
+    (tbuse handle (
+      (setq fhandletype (newhandletype))
+      (tbsval fs 'fhandlefromdnfilestream (lambda (dnfs) (
+        (newhandle fhandletype dnfs)
+      )))
+      (tbsval fs 'dnfilestreamfromfhandle (lambda (fhandle) (
+        (gethandleval fhandletype fhandle)
+      )))
+      (tbsval fs 'closef (lambda (fhandle) (
+        (FileStream.Dispose (gethandleval fhandletype fhandle))
+        (freehandle fhandletype fhandle)
+      )))
+    ))
+    (let (newfhandle (tbgval fs 'fhandlefromdnfilestream) gethandlefs (tbgval fs 'dnfilestreamfromfhandle)) (
+      (tbsval fs 'openfr (lambda (path) (
+        (newfhandle (FileStream.new path FileMode.Open FileAccess.Read))
+      )))
+      (tbsval fs 'openfrw (lambda (path) (
+        (newfhandle (FileStream.new path FileMode.OpenOrCreate FileAccess.ReadWrite))
+      )))
+      (tbuse buffer (
+        (tbsval fs 'readf (lambda (fhandle bhandle startindex len) (
+          (FileStream.Read (gethandlefs fhandle) (dnbytearrayfrombhandle bhandle) startindex len)
+        )))
+        (tbsval fs 'writef (lambda (fhandle bhandle startindex len) (
+          (FileStream.Write (gethandlefs fhandle) (dnbytearrayfrombhandle bhandle) startindex len)
+        )))
+      ))
+      (tbsval fs 'readone (lambda (fhandle) (
+        (FileStream.ReadByte (gethandlefs fhandle))
+      )))
+      (tbsval fs 'writeone (lambda (fhandle byte) (
+        (FileStream.WriteByte (gethandlefs fhandle) byte)
+      )))
+      (tbsval fs 'seek (lambda (fhandle count) (
+        (FileStream.Seek (gethandlefs fhandle) count SeekOrigin.Current)
+      )))
+      (tbsval fs 'seekto (lambda (fhandle index) (
+        (FileStream.Seek (gethandlefs fhandle) index SeekOrigin.Begin)
+      )))
+      (tbsval fs 'streampos (lambda (fhandle) (
+        (FileStream.Position (gethandlefs fhandle))
+      )))
+      (tbsval fs 'streamlen (lambda (fhandle) (
+        (FileStream.Length (gethandlefs fhandle))
+      )))
+      (tbsval fs 'streamslen (lambda (fhandle length) (
+        (FileStream.SetLength (gethandlefs fhandle) length)
+      )))
+    ))
+    (let (
+      pathdelimeter "\\" altpathdelimeter "/" ; OS-dependent swapped everywhere else
+      delemptysegs (lambda (segments) (
+        (let (newsegments ()) (
+          (lsiter segments (lambda (seg) (
+            (if (> (txlen seg) 0)
+              (setq newsegments (lspush newsegments seg))
+              ()
+            )
+          )))
+          (values newsegments)
+        ))
+      ))
+      constructpath (lambda (segments) (
+        (setq segments (delemptysegs segments))
+        (let (constructedpath "") (
+          (lsiterang segments (lambda (seg) (
+            (setq constructedpath (txconc constructedpath (txconc seg pathdelimeter)))
+          )) 0 (- (lslen segments) 1))
+          (txconc constructedpath (lslast segments))
+        ))
+      ))
+      segmentpath (lambda (path) (
+        (txsplit (txrepl path altpathdelimeter pathdelimeter) pathdelimeter)
+      ))
+    ) (
+      (tbsval fs 'parentpath (lambda (path) (
+        (let (segments (segmentpath path)) (
+          (constructpath (lsrang segments 0 (- (lslen segments) 1)))
+        ))
+      )))
+      (tbsval fs 'pathconc (lambda (path1 path2) (
+        (let (segments1 (segmentpath path1) segments2 (segmentpath path2)) (
+          (constructpath (lsconc segments1 segments2))
+        ))
+      )))
+      (tbsval fs 'pathconclist (lambda (pathList) (
+        (let (segments ()) (
+          (lsiter pathList (lambda (path) (
+            (setq segments (lsconc segments (segmentpath path)))
+          )))
+          (constructpath segments)
+        ))
+      )))
+      (tbsval fs 'pathname (lambda (path) (
+        (lslast (segmentpath path))
+      )))
+      (tbsval fs 'segmentpath (lambda (path) (
+        (segmentpath path)
+      )))
+      (tbsval fs 'constructpath (lambda (segments) (
+        (constructpath segments)
+      )))
+    ))
+  ))
+  (values fs)
+))
