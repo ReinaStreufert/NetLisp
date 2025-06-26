@@ -104,13 +104,17 @@ namespace nlshell
                 }
             }
         }
+
+        public static IEnumerable<AutocompleteOption> FromScopeAnalysis(ListScopeAnalysis listScope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType)
+            => getScopeAnalysisOptions(listScope, startText, typeRestrictions, searchType); // make this work
+
         private static IEnumerable<AutocompleteOption> getScopeAnalysisOptions(ListScopeAnalysis listScope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType)
         {
             foreach (AutocompleteOption option in getScopeOptions(listScope.InnerBuiltScope, startText, typeRestrictions, searchType, 2))
             {
                 yield return option;
             }
-            foreach (AutocompleteOption option in getScopeOptions(listScope.InnerGlobalScope, startText, typeRestrictions, searchType, listScope.))
+            foreach (AutocompleteOption option in getScopeOptions(listScope.InnerGlobalScope, startText, typeRestrictions, searchType, 2))
             {
                 yield return option;
             }

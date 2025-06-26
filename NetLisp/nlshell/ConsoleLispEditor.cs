@@ -1227,7 +1227,7 @@ namespace nlshell
         public string FullText { get; set; }
         public int Rank { get; set; }
 
-        public AutocompleteOption(string optionText, string fullText, int rank)
+        public AutocompleteOption(string optionText, string fullText, int rank = 0) // make this work (half written feature)
         {
             OptionText = optionText;
             FullText = fullText;

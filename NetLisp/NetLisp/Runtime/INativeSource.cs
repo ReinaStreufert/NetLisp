@@ -18,7 +18,7 @@ namespace NetLisp.Runtime
             Type nativeSourceType;
             try
             {
-                sourceAssembly = Assembly.LoadFrom(filePath);
+                sourceAssembly = Assembly.LoadFile(filePath);
                 nativeSourceType = sourceAssembly.GetType(innerType);
             } catch
             {

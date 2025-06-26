@@ -8,6 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="App.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="App.config" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />
   </ItemGroup>
 
