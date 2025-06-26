@@ -37,6 +37,10 @@ namespace nlshell
             };
         }
 
+        // make this work
+        public static IEnumerable<AutocompleteOption> FromFilesystemPath(AutocompleteCache cache, string startText)
+            => getFilepathOptions(cache, startText);
+
         private static IEnumerable<AutocompleteOption> getFilepathOptions(AutocompleteCache cache, string startText)
         {
             PathAutocompleteCache pathCache = (PathAutocompleteCache)cache;
