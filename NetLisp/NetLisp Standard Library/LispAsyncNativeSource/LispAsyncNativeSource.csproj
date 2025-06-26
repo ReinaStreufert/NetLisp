@@ -8,8 +8,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\NetLisp\NetLisp.csproj" />
-    <ProjectReference Include="..\LispDNBridgeNativeSource\LispDNBridgeNativeSource.csproj" />
-    <ProjectReference Include="..\LispTableNativeSource\LispTableNativeSource.csproj" />
+    <ProjectReference Include="..\LispDNBridgeNativeSource\LispDNBridgeNativeSource.csproj">
+      <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\LispTableNativeSource\LispTableNativeSource.csproj">
+      <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

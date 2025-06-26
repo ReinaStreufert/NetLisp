@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\NetLisp\NetLisp.csproj" />
-    <ProjectReference Include="..\LispTableNativeSource\LispTableNativeSource.csproj" />
+    <ProjectReference Include="..\LispTableNativeSource\LispTableNativeSource.csproj">
+      <ReferenceOutputAssembly>True</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

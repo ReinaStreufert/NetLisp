@@ -19,13 +19,20 @@ namespace NetLisp.Runtime
             Type nativeSourceType;
             try
             {
-                sourceAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
-                nativeSourceType = sourceAssembly.GetType(innerType);
+                sourceAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(AssemblyName.GetAssemblyName(filePath));
             } catch
             {
-                loadedSource = null;
-                return false;
+                try
+                {
+                    sourceAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+                }
+                catch
+                {
+                    loadedSource = null;
+                    return false;
+                }
             }
+            nativeSourceType = sourceAssembly.GetType(innerType);
             if (nativeSourceType == null || !nativeSourceType.IsAssignableTo(typeof(INativeSource)))
             {
                 loadedSource = null;

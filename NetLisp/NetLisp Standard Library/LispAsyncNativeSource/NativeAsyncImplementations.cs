@@ -3,7 +3,6 @@ using LispTableNativeSource;
 using NetLisp.Data;
 using NetLisp.Runtime;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LispAsyncNativeSource
 {
