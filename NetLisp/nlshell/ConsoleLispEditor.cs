@@ -4,7 +4,6 @@ using NetLisp.Text.CodeAnalysis;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -789,6 +788,11 @@ namespace nlshell
                     if (WindowHeight < Console.WindowHeight - 1)
                     {
                         scrollY = (Console.WindowHeight - 1) - WindowHeight;
+                        Console.SetCursorPosition(0, Console.WindowTop + Console.WindowHeight - 1);
+                        for (int i = 0; i < scrollY; i++)
+                        {
+                            Console.WriteLine();
+                        }
                         WindowY -= scrollY;
                         WindowHeight += scrollY;
                         ScrollY += scrollY;
@@ -1164,12 +1168,12 @@ namespace nlshell
             } else if (autocompleteSelectedItem > -1 && ((keyInfo.Key == ConsoleKey.Enter && keyInfo.Modifiers == 0) || keyInfo.Key == ConsoleKey.Tab))
             {
                 AutocompleteOption chosenOption = lastAutocompleteOptions[lastAutocompleteOptions.Length - 1 - autocompleteSelectedItem];
-                Buffer.Insert(CursorPosition, chosenOption.InsertText);
-                MoveLineBreaks(CursorPosition, chosenOption.InsertText.Length);
+                Buffer.Insert(CursorPosition, chosenOption.FullText);
+                MoveLineBreaks(CursorPosition, chosenOption.FullText.Length);
                 ProcessSourceChange();
                 (int x, int y) cursorScreenPos = XYfromBufferPosition(CursorPosition);
                 InvalidateRegion(cursorScreenPos.x, cursorScreenPos.y, WindowWidth - cursorScreenPos.x, 1);
-                CursorPosition = CursorPosition + chosenOption.InsertText.Length;
+                CursorPosition = CursorPosition + chosenOption.FullText.Length;
                 ScrollCursorIntoView();
                 return false;
             }
@@ -1220,12 +1224,14 @@ namespace nlshell
     public struct AutocompleteOption
     {
         public string OptionText { get; set; }
-        public string InsertText { get; set; }
+        public string FullText { get; set; }
+        public int Rank { get; set; }
 
-        public AutocompleteOption(string optionText, string insertText)
+        public AutocompleteOption(string optionText, string fullText, int rank)
         {
             OptionText = optionText;
-            InsertText = insertText;
+            FullText = fullText;
+            Rank = rank;
         }
     }
     public struct TipContent

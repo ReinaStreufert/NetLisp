@@ -11,7 +11,12 @@ namespace NetLisp.Runtime
     {
         private Dictionary<string, LispToken> nameTable = new Dictionary<string, LispToken>();
 
-        public Scope Parent { get; set; } = null;
+        private Scope? parent = null;
+        public Scope? Parent
+        {
+            get { return parent; }
+            set { parent = value; }
+        }
 
         private Scope() { }
         internal static Scope CreateGlobal()
@@ -20,7 +25,7 @@ namespace NetLisp.Runtime
         }
         internal static Scope CreateInheritingScope(Scope parent)
         {
-            return new Scope() { Parent = parent };
+            return new Scope() { parent = parent };
         }
 
         public static void LinkScopes(Scope srcScope, Scope dstScope)
@@ -34,36 +39,32 @@ namespace NetLisp.Runtime
         }
         public bool Define(string name, LispToken initValue)
         {
-            if (nameTable.ContainsKey(name))
-            {
-                return false;
-            }
-            nameTable.Add(name, initValue);
-            return true;
+            return nameTable.TryAdd(name, initValue);
         }
         public LispToken? Get(string name)
         {
-            if (!nameTable.ContainsKey(name))
+            LispToken nameVal;
+            if (!nameTable.TryGetValue(name, out nameVal))
             {
-                if (Parent != null)
+                if (parent != null)
                 {
-                    return Parent.Get(name);
+                    return parent.Get(name);
                 } else
                 {
                     return null;
                 }
             } else
             {
-                return nameTable[name];
+                return nameVal;
             }
         }
         public bool Set(string name, LispToken value)
         {
             if (!nameTable.ContainsKey(name))
             {
-                if (Parent != null)
+                if (parent != null)
                 {
-                    return Parent.Set(name, value);
+                    return parent.Set(name, value);
                 } else
                 {
                     return false;
@@ -84,12 +85,12 @@ namespace NetLisp.Runtime
                     return pair.Key;
                 }
             }
-            if (Parent == null)
+            if (parent == null)
             {
                 return null;
             } else
             {
-                return Parent.Search(value);
+                return parent.Search(value);
             }
         }
         public IEnumerable<KeyValuePair<string, LispToken>> AllDefinedNames()

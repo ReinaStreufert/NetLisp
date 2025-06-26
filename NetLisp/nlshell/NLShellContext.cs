@@ -20,6 +20,10 @@ namespace nlshell
         private List<string> pastSources = new List<string>();
         private int pastSourceInd = 0;
 
+        private string openLast = null;
+        private string saveLast = null;
+        private int openLastPos = -1;
+
         public NLShellContext()
         {
             RuntimeContext = new RuntimeContext(SandboxingFlags.AllowArbitraryFileLoad);
@@ -33,6 +37,17 @@ namespace nlshell
                 new LispSymbol("path")));
             RuntimeContext.SyntaxError += RuntimeContext_SyntaxError;
             RuntimeContext.RuntimeError += RuntimeContext_RuntimeError;
+        }
+
+        public void SetOpenBuffer(string text)
+        {
+            openLast = text;
+        }
+        public string GetSavedBuffer()
+        {
+            string oldSaveLast = saveLast;
+            saveLast = null;
+            return oldSaveLast;
         }
 
         private void RuntimeContext_RuntimeError(RuntimeError err)
@@ -77,6 +92,7 @@ namespace nlshell
                 Console.Write("[" + Environment.CurrentDirectory + " " + consString + "]");
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.WriteLine();
+                int initialCursorPos = 1;
                 activeEditor = new ConsoleLispEditor(sourceAnalyzer, 5, Console.CursorTop, "()");
                 activeEditor.CreepUp = true;
                 activeEditor.BottomMargin = 4;
@@ -89,14 +105,29 @@ namespace nlshell
                     }
                     editorScriptsAdded = true;
                 }
-                activeEditor.CursorPosition = 1;
-                activeEditor.CreepUp = true;
+                if (openLast != null)
+                {
+                    string startText = openLast;
+                    if (openLastPos > -1)
+                    {
+                        initialCursorPos = openLastPos;
+                    }
+                    else
+                    {
+                        initialCursorPos = startText.Length;
+                    }
+                    activeEditor.SetText(startText);
+                    openLast = null;
+                    openLastPos = -1;
+                }
+                activeEditor.CursorPosition = initialCursorPos;
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.Enter, enterKeyBinding));
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.R, enterKeyBinding));
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.UpArrow, historyKeyBinding));
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.DownArrow, historyKeyBinding));
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.OemComma, historyKeyBinding));
                 activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.OemPeriod, historyKeyBinding));
+                activeEditor.KeyBindings.Add(new KeyBinding(ConsoleKey.S, saveKeyBinding));
                 activeEditor.AddDefaultKeybindings();
                 activeEditor.PaintLineCounter();
                 activeEditor.EnterInputLoop();
@@ -108,16 +139,19 @@ namespace nlshell
                 string expr = activeEditor.Buffer.ToString();
                 pastSources.Add(expr);
                 pastSourceInd = pastSources.Count;
-                IEnumerable<LispToken> exprResult = RuntimeContext.EvaluateExpressions(expr, consString);
-                if (exprResult != null)
+                if (openLast == null)
                 {
-                    foreach (LispToken token in exprResult)
+                    IEnumerable<LispToken> exprResult = RuntimeContext.EvaluateExpressions(expr, consString);
+                    if (exprResult != null)
                     {
-                        Console.CursorLeft = 2;
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.Write("=> ");
-                        Console.ForegroundColor = ConsoleColor.Gray;
-                        Console.WriteLine(token.ToString().Replace("\n", "\n     "));
+                        foreach (LispToken token in exprResult)
+                        {
+                            Console.CursorLeft = 2;
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.Write("=> ");
+                            Console.ForegroundColor = ConsoleColor.Gray;
+                            Console.WriteLine(token.ToString().Replace("\n", "\n     "));
+                        }
                     }
                 }
                 Console.WriteLine();
@@ -175,6 +209,21 @@ namespace nlshell
                 return true;
             }
             else
+            {
+                return false;
+            }
+        }
+
+        private bool saveKeyBinding(ConsoleLispEditor editor, ConsoleKeyInfo keyInfo)
+        {
+            if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
+            {
+                saveLast = editor.Buffer.ToString();
+                openLast = "(save \"\")";
+                openLastPos = 7;
+                activeEditor.BreakInputLoop();
+                return true;
+            } else
             {
                 return false;
             }

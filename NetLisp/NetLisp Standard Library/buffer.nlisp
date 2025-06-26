@@ -11,7 +11,7 @@
     (tbsval buf 'dnbytearrayfrombhandle (lambda (bhandle) (
       (gethandleval bhandletype bhandle)
     )))
-    (tbsval buf 'releasebuf (lambda (fhandle) (
+    (tbsval buf 'releasebuf (lambda (bhandle) (
       (freehandle bhandletype bhandle)
     )))
   ))

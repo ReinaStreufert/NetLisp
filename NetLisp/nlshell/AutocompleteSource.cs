@@ -9,8 +9,11 @@ using System.Threading.Tasks;
 
 namespace nlshell
 {
-    public static class AutocompleteSource
+    public class AutocompleteSource
     {
+        public IEnumerable<AutocompleteOption> OptionSource { get; set; }
+        public int AutocompleteTokenStart { get; set; }
+
         public abstract class AutocompleteCache
         {
             public static AutocompleteCache CreatePathCache()
@@ -24,7 +27,17 @@ namespace nlshell
             public string[]? lastSubDirs = null;
             public string[]? lastSubFiles = null;
         }
-        public static IEnumerable<AutocompleteOption> FromFilesystemPath(AutocompleteCache cache, string startText)
+
+        public static AutocompleteSource FromFilesystemPath(AutocompleteCache cache, string startText, int tokenStart)
+        {
+            return new AutocompleteSource()
+            { 
+                AutocompleteTokenStart = tokenStart, 
+                OptionSource = getFilepathOptions(cache, startText),
+            };
+        }
+
+        private static IEnumerable<AutocompleteOption> getFilepathOptions(AutocompleteCache cache, string startText)
         {
             PathAutocompleteCache pathCache = (PathAutocompleteCache)cache;
             string[] startTextSegments = startText.Split('/', '\\');
@@ -91,18 +104,18 @@ namespace nlshell
                 }
             }
         }
-        public static IEnumerable<AutocompleteOption> FromScopeAnalysis(ListScopeAnalysis listScope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType)
+        private static IEnumerable<AutocompleteOption> getScopeAnalysisOptions(ListScopeAnalysis listScope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType)
         {
-            foreach (AutocompleteOption option in fromScope(listScope.InnerGlobalScope, startText, typeRestrictions, searchType))
+            foreach (AutocompleteOption option in getScopeOptions(listScope.InnerBuiltScope, startText, typeRestrictions, searchType, 2))
             {
                 yield return option;
             }
-            foreach (AutocompleteOption option in fromScope(listScope.InnerBuiltScope, startText, typeRestrictions, searchType))
+            foreach (AutocompleteOption option in getScopeOptions(listScope.InnerGlobalScope, startText, typeRestrictions, searchType, listScope.))
             {
                 yield return option;
             }
         }
-        private static IEnumerable<AutocompleteOption> fromScope(Scope scope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType)
+        private static IEnumerable<AutocompleteOption> getScopeOptions(Scope scope, string startText, MetadataTypeRestrictions typeRestrictions, ScopeAnalysisAutocompleteType searchType, int rank)
         {
             if (typeRestrictions.IsNoType)
             {
@@ -125,13 +138,13 @@ namespace nlshell
                         {
                             if (typeRestrictions.CanBePassed(((AnalysisToken)nameValue).TokenTypeRestriction))
                             {
-                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length));
+                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length), rank);
                             }
                         } else
                         {
                             if (typeRestrictions.CanBePassed(nameValueType))
                             {
-                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length));
+                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length), rank);
                             }
                         }
                     } else if (searchType == ScopeAnalysisAutocompleteType.MatchingRoutines)
@@ -142,7 +155,7 @@ namespace nlshell
                             MetadataTypeRestrictions returnTypeRestriction = executableValue.Metadata.ReturnParam.TypeRestrictions;
                             if (typeRestrictions.CanBePassed(returnTypeRestriction))
                             {
-                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length));
+                                yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length), rank);
                             }
                         } else if (nameValue.GetTypeInfo() == AnalysisToken.AnalysisTokenExtendedTypeInfo)
                         {
@@ -152,7 +165,7 @@ namespace nlshell
                                 MetadataTypeRestrictions returnTypeRestriction = analysisValue.PotentialExecutableDefinition.Metadata.ReturnParam.TypeRestrictions;
                                 if (typeRestrictions.CanBePassed(returnTypeRestriction))
                                 {
-                                    yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length));
+                                    yield return new AutocompleteOption(pair.Key, pair.Key.Substring(startText.Length), rank);
                                 }
                             }
                         }
@@ -164,7 +177,7 @@ namespace nlshell
             }
             if (scope.Parent != null)
             {
-                foreach (AutocompleteOption parentResult in fromScope(scope.Parent, startText, typeRestrictions, searchType))
+                foreach (AutocompleteOption parentResult in getScopeOptions(scope.Parent, startText, typeRestrictions, searchType, rank - 1))
                 {
                     yield return parentResult;
                 }

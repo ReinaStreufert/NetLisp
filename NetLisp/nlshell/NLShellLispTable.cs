@@ -1,4 +1,5 @@
-﻿using LispTableNativeSource;
+﻿using LispDNBridgeNativeSource;
+using LispTableNativeSource;
 using NetLisp.Data;
 using NetLisp.Runtime;
 using System;
@@ -18,7 +19,7 @@ namespace nlshell
             Scope global = shellContext.RuntimeContext.Scopes.GlobalScope;
             this[new LispSymbol("shver")] = new LispFunction(new NativeExecutableBody(shver), ScopeStack.ConstructFromScope(global), null);
             this[new LispSymbol("nlver")] = new LispFunction(new NativeExecutableBody(nlver), ScopeStack.ConstructFromScope(global), null);
-            this[new LispSymbol("nlctx")] = new LispFunction(new NativeExecutableBody(nlctx), ScopeStack.ConstructFromScope(global), null);
+            this[new LispSymbol("nlctx")] = new DotnetInstance(ShellContext);
         }
         private IEnumerable<LispToken> shver(RuntimeContext runtimeContext)
         {
@@ -27,10 +28,6 @@ namespace nlshell
         private IEnumerable<LispToken> nlver(RuntimeContext runtimeContext)
         {
             yield return new LispString(RuntimeContext.Version);
-        }
-        private IEnumerable<LispToken> nlctx(RuntimeContext runtimeContext)
-        {
-            yield break;
         }
     }
 }

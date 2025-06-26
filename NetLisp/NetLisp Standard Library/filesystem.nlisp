@@ -92,7 +92,7 @@
       (File:ReadAllText path)
     )))
     (tbsval fs 'writeatx (lambda (path text) (
-      (File:ReadAllText path text)
+      (File:WriteAllText path text)
     )))
     (tbuse handle (
       (setq fhandletype (newhandletype))
