@@ -93,7 +93,7 @@
       )
     )))
 
-    (dnuset (dnftype "System.Math" Math) (
+    (dnuset (dnftype "System.Math") Math (
       (tbsval math 'acos (lambda (n) (
         (Math:Acos n)
         )))
