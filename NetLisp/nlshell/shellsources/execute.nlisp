@@ -3,18 +3,28 @@
 (dnloadasm "System.Diagnostics.Process")
 (dnuse (System.Diagnostics System.IO) (
   (define : (lambda (filename) (
+    (annotation "Run a process in nlshell until it exits")
+    (argument filename ("string") (fspath ()) "The path to the executable file")
+    ) (
     (let (proc (Process:Start filename)) (
       (Process.WaitForExit proc)
       (returnvalues)
       ))
     )))
   (define :: (lambda (filename args) (
+    (annotation "Run a process in nlshell with command line arguments until it exits")
+    (argument filename ("string") (fspath ()) "The path to the executable file")
+    (argument args ("string") () "The command line arguments used when starting the process")
+    ) (
     (let (proc (Process:Start filename args)) (
       (Process.WaitForExit proc)
       (returnvalues)
       ))
     )))
   (define ~ (lambda (filename) (
+    (annotation "Starts a process")
+    (argument filename ("string") (fspath ()) "The path to the executable file")
+    ) (
     (let (psi (ProcessStartInfo.new filename)) (
       (ProcessStartInfo.UseShellExecute psi true)
       (Process:Start psi)
@@ -22,6 +32,10 @@
       ))
     )))
   (define ~~ (lambda (filename args) (
+    (annotation "Starts a process in nlshell with command line arguments")
+    (argument filename ("string") (fspath ()) "The path to the executable file")
+    (argument args ("string") () "The command line arguments used when starting the process")
+    ) (
     (let (psi (ProcessStartInfo.new filename args)) (
       (ProcessStartInfo.UseShellExecute psi true)
       (Process:Start psi)

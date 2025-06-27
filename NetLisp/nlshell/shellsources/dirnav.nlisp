@@ -12,9 +12,14 @@
     (tbuse outputhelpers (
       (tbuse datetime (
         (define ls (lambda () (
+          (annotation "Lists the contents of the current directory")
+          ) (
           (lsp (workdir))
         )))
         (define lsp (lambda (listpath) (
+          (annotation "Lists the contents of a directory")
+          (argument listpath ("string") (fspath ()) "The path of the directory to list")
+          ) (
           (let (
             colpairs ()
             typecol ()

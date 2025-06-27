@@ -8,21 +8,43 @@
   (dnuse (System System.IO) (
     (setq File:ReadAllBytes (dnexactreturn File:ReadAllBytes))
     (tbsval fs 'subfiles (lambda (path) (
+      (annotation "Get a list of file paths inside of a directory")
+      (returnparam ("list") () "List of file paths")
+      (argument path ("string") (fspath ()) "Base directory path")
+      ) (
       (Directory:GetFiles path)
-    )))
+      )))
     (tbsval fs 'subdirs (lambda (path) (
+      (annotation "Returns a list of directory paths inside of a directory")
+      (returnparam ("list") () "List of directory paths")
+      (argument path ("string") (fspath ()) "Base directory path")
+      ) (
       (Directory:GetDirectories path)
-    )))
+      )))
     (tbsval fs 'workdir (lambda () (
+      (annotation "Returns the current working directory path")
+      (returnparam ("string") () "The base directory used to resolve relative paths")
+      ) (
       (Environment:CurrentDirectory)
-    )))
+      )))
     (tbsval fs 'sworkdir (lambda (path) (
+      (annotation "Returns the current working directory path")
+      (argument path ("string") (fspath ()) "New base directory path used to resolve relative paths")
+      ) (
       (Environment:CurrentDirectory path)
-    )))
+      )))
     (tbsval fs 'fexists? (lambda (path) (
+      (annotation "Checks if a file exists")
+      (returnparam ("boolean") () "True if the file exists")
+      (argument path ("string") (fspath ()) "The path at which to check whether or not a file exists")
+      ) (
       (File:Exists path)
-    )))
+      )))
     (tbsval fs 'finfotb (lambda (path) (
+      (annotation "Returns file metadata")
+      (returnparam ("3347cb5b-f285-4b9a-873c-fbf3fe480eb3") () "A table with keys size, lastmodified, and fullpath")
+      (argument path ("string") (fspath ()) "The path of the file")
+      ) (
       (let (finfo (FileInfo.new path) infotb (tbnew)) (
         (tbsval infotb 'size (FileInfo.Length finfo))
         (tbsval infotb 'lastmodified (DateTime.Ticks (FileInfo.LastWriteTime finfo)))
@@ -31,9 +53,17 @@
       ))
     )))
     (tbsval fs 'dexists? (lambda (path) (
+      (annotation "Checks if a directory exists")
+      (returnparam ("boolean") () "True if the directory exists")
+      (argument path ("string") (fspath ()) "The path at which to check whether or not a directory exists")
+      ) (
       (Directory:Exists path)
     )))
     (tbsval fs 'dinfotb (lambda (path) (
+      (annotation "Returns directory metadata")
+      (returnparam ("3347cb5b-f285-4b9a-873c-fbf3fe480eb3") () "A table with keys lastmodified, and fullpath")
+      (argument path ("string") (fspath ()) "The path of the directory")
+      ) (
       (let (dinfo (DirectoryInfo.new path) infotb (tbnew)) (
         (tbsval infotb 'lastmodified (DateTime.Ticks (DirectoryInfo.LastWriteTime dinfo)))
         (tbsval infotb 'fullpath (DirectoryInfo.FullName dinfo))
@@ -41,25 +71,50 @@
       ))
     )))
     (tbsval fs 'movef (lambda (path newPath) (
+      (annotation "Moves a file")
+      (argument path ("string") (fspath ()) "The path of the file to be moved")
+      (argument newPath ("string") (fspath ()) "The destination path")
+      ) (
       (File:Move path newPath true)
     )))
     (tbsval fs 'moved (lambda (path newPath) (
+      (annotation "Moves a directory")
+      (argument path ("string") (fspath ()) "The path of the directory to be moved")
+      (argument newPath ("string") (fspath ()) "The destination path")
+      ) (
       (Directory:Move path newPath)
     )))
     (tbsval fs 'deletef (lambda (path) (
+      (annotation "Deletes a file")
+      (argument path ("string") (fspath ()) "The path of the file to be deleted")
+      ) (
       (File:Delete path)
     )))
     (tbsval fs 'deleted (lambda (path) (
+      (annotation "Deletes a directory and all files it contains")
+      (argument path ("string") (fspath ()) "The path of the directory to be deleted")
+      ) (
       (Directory:Delete path true)
     )))
     (tbsval fs 'createpath (lambda (path) (
+      (annotation "Creates a directory if it does not already exist")
+      (argument path ("string") (fspath ()) "The path to create")
+      ) (
       (Directory:CreateDirectory path)
       (returnvalues)
     )))
     (tbsval fs 'copyf (lambda (path newPath) (
+      (annotation "Copies a file")
+      (argument path ("string") (fspath ()) "The path of the file to copy from")
+      (argument newPath ("string") (fsPath ()) "The destination path")
+      ) (
       (File:Copy path newPath true)
     )))
     (tbsval fs 'copydr (lambda (path newPath) (
+      (annotation "Copies a directory and its contents recursively")
+      (argument path ("string") (fspath ()) "The path of the directory to copy")
+      (argument newPath ("string") (fsPath ()) "The destination path")
+      ) (
       (let (
         subfiles (tbgval fs 'subfiles)
         subdirs (tbgval fs 'subdirs)
@@ -82,36 +137,71 @@
     )))
     (tbuse buffer (
       (tbsval fs 'reada (lambda (path) (
+        (annotation "Reads all bytes of a file")
+        (returnparam ("number") () "A handle to a buffer which holds the read content of the file")
+        (argument path ("string") (fspath ()) "The path of the file to read")
+        ) (
         (bhandlefromdnbytearray (File:ReadAllBytes path))
       )))
       (tbsval fs 'writea (lambda (path bhandle) (
+        (annotation "Writes contents of a buffer to file")
+        (argument path ("string") (fspath ()) "The output path for the written file")
+        (argument bhandle ("number") () "The handle to the buffer to write from")
+        ) (
         (File:WriteAllBytes path (dnbytearrayfrombhandle bhandle))
       )))
     ))
     (tbsval fs 'readatx (lambda (path) (
+      (annotation "Reads all text in a file, automatically detecting its encoding")
+      (returnparam ("string") () "The text of the file")
+      (argument path ("string") (fspath ()) "The path of the file to read")
+      ) (
       (File:ReadAllText path)
     )))
     (tbsval fs 'writeatx (lambda (path text) (
+      (annotation "Writes text to a file")
+      (argument path ("string") (fspath ()) "The output path for the written file")
+      (argument text ("string") () "The text to be written")
+      ) (
       (File:WriteAllText path text)
     )))
     (tbuse handle (
       (setq fhandletype (newhandletype))
       (tbsval fs 'fhandlefromdnfilestream (lambda (dnfs) (
+        (annotation "Creates a filesystem handle from a dotnet FileStream object")
+        (returnparam ("number") () "The file handle")
+        (argument dnfs ("ecf19b78-659c-4f4b-9fbd-41fb83f7843d") () "The dotnet FileStream object")
+        ) (
         (newhandle fhandletype dnfs)
       )))
       (tbsval fs 'dnfilestreamfromfhandle (lambda (fhandle) (
+        (annotation "Gets the dotnet FileStream object associated with a filesystem handle")
+        (returnparam ("ecf19b78-659c-4f4b-9fbd-41fb83f7843d") () "The dotnet FileStream object")
+        (argument fhandle ("number") () "The file handle")
+        ) (
         (gethandleval fhandletype fhandle)
       )))
       (tbsval fs 'closef (lambda (fhandle) (
+        (annotation "Releases a file handle")
+        (argument fhandle ("number") () "The handle of the file to be released")
+        ) (
         (FileStream.Dispose (gethandleval fhandletype fhandle))
         (freehandle fhandletype fhandle)
       )))
     ))
     (let (newfhandle (tbgval fs 'fhandlefromdnfilestream) gethandlefs (tbgval fs 'dnfilestreamfromfhandle)) (
       (tbsval fs 'openfr (lambda (path) (
+        (annotation "Opens a file handle with read permissions")
+        (returnparam ("number") () "The created filesystem handle")
+        (argument path ("string") (fspath ()) "The path of the file to open")
+        ) (
         (newfhandle (FileStream.new path FileMode.Open FileAccess.Read))
       )))
       (tbsval fs 'openfrw (lambda (path) (
+        (annotation "Opens a file handle with read/write permissions")
+        (returnparam ("number") () "The created filesystem handle")
+        (argument path ("string") (fspath ()) "The path of the file to open")
+        ) (
         (newfhandle (FileStream.new path FileMode.OpenOrCreate FileAccess.ReadWrite))
       )))
       (tbuse buffer (
@@ -171,16 +261,29 @@
       ))
     ) (
       (tbsval fs 'parentpath (lambda (path) (
+        (annotation "Returns the parent path of another path")
+        (returnparam ("string") () "The parent path")
+        (argument path ("string") (fspath ()) "The input path")
+        ) (
         (let (segments (segmentpath path)) (
           (constructpath (lsrang segments 0 (- (lslen segments) 1)))
         ))
       )))
       (tbsval fs 'pathconc (lambda (path1 path2) (
+        (annotation "Returns a path concatenated to a base path")
+        (returnparam ("string") () "The concatenated path")
+        (argument path1 ("string") (fspath ()) "The base path")
+        (argument path2 ("string") (fspath ()) "The path to concatenate which is relative to the base path")
+        ) (
         (let (segments1 (segmentpath path1) segments2 (segmentpath path2)) (
           (constructpath (lsconc segments1 segments2))
         ))
       )))
       (tbsval fs 'pathconclist (lambda (pathList) (
+        (annotation "Returns one path from a sequence of paths to be concatenated")
+        (returnparam ("string") () "The concatenated path")
+        (argument pathList ("list") () "The list of paths to be concatenated in order")
+        ) (
         (let (segments ()) (
           (lsiter pathList (lambda (path) (
             (setq segments (lsconc segments (segmentpath path)))
@@ -189,12 +292,24 @@
         ))
       )))
       (tbsval fs 'pathname (lambda (path) (
+        (annotation "Returns the last segment in a path")
+        (returnparam ("string") () "The last segment in the path representing the file or directory name")
+        (argument path ("string") (fspath ()) "The input path")
+        ) (
         (lslast (segmentpath path))
       )))
       (tbsval fs 'segmentpath (lambda (path) (
+        (annotation "Returns a list of segments in a path")
+        (returnparam ("list") () "The individual segments in the path")
+        (argument path ("string") (fspath ()) "The input path")
+        ) (
         (segmentpath path)
       )))
       (tbsval fs 'constructpath (lambda (segments) (
+        (annotation "Returns a path from a list of segments concatenated with the platform path delimiter")
+        (returnparam ("string") () "The constructed path")
+        (argument segments ("list") () "The list of path segments")
+        ) (
         (constructpath segments)
       )))
     ))
