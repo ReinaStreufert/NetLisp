@@ -17,4 +17,10 @@
     <ProjectReference Include="..\NetLisp\NetLisp.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="shellsources\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

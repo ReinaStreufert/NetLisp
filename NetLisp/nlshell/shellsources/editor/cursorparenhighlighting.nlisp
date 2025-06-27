@@ -1,0 +1,109 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (System NetLisp.Data NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    parenhighlight (tbnew)
+    editor ()
+    brightopenparenpos ()
+    brightcloseparenpos ()
+    CharacterMap<ConsoleColor>T (dngenerict CharacterMap`1 ConsoleColor)
+    CharacterRange<ConsoleColor>T (dngenerict CharacterMap`1+CharacterRange ConsoleColor)
+    ValueTuple<int,int>T (dngenerict ValueTuple`2 Int32 Int32)
+  ) (
+    (tbsval parenhighlight 'scriptinit (lambda (neweditor) (
+      (setq editor neweditor)
+    )))
+    (dnuset CharacterMap<ConsoleColor>T CharacterMap<ConsoleColor> (
+      (dnuset CharacterRange<ConsoleColor>T CharacterRange<ConsoleColor> (
+        (dnuset ValueTuple<int,int>T ValueTuple<int,int> (
+          (tbsval parenhighlight 'inputproc (lambda () (
+            (let (
+              sourceanalysis (ConsoleLispEditor.BufferAnalysis editor)
+              syntaxmap (ConsoleLispEditor.BufferSyntaxHighlighting editor)
+              cursorpos (ConsoleLispEditor.CursorPosition editor)
+              cursorlist (SourceAnalysis.SearchExpressionScopeData sourceanalysis cursorpos)
+              scrollx (ConsoleLispEditor.ScrollX editor)
+              scrolly (ConsoleLispEditor.ScrollY editor)
+              brightopenparen (if (= brightopenparenpos ())
+                (values -1)
+                (ConsoleLispEditor.BufferPositionFromXY editor
+                  (- (lsfirst brightopenparenpos) scrollx)
+                  (- (lslast brightopenparenpos) scrolly)
+                  )
+              )
+              brightcloseparen (if (= brightcloseparenpos ())
+                (values -1)
+                (ConsoleLispEditor.BufferPositionFromXY editor
+                  (- (lsfirst brightcloseparenpos) scrollx)
+                  (- (lslast brightcloseparenpos) scrolly)
+                  )
+              )
+              newopenparen (if (= cursorlist ())
+                (values -1)
+                (ListScopeAnalysis.OpenParenPosition cursorlist)
+              )
+              newcloseparen (if (= cursorlist ())
+                (values -1)
+                (ListScopeAnalysis.CloseParenPosition cursorlist)
+              )
+              maplen (CharacterMap<ConsoleColor>.Length syntaxmap)
+              darkenparen (lambda (brightparen newparen) (
+                (if (and (> brightparen -1) (not (= brightparen newparen)) (< brightparen maplen))
+                  (let (
+                    maprange (CharacterMap<ConsoleColor>.Item syntaxmap brightparen)
+                    rangecolor (CharacterRange<ConsoleColor>.Classification maprange)
+                  ) (
+                    (if (= rangecolor ConsoleColor.Gray)
+                      (CharacterRange<ConsoleColor>.Classification maprange ConsoleColor.DarkGray)
+                      ()
+                    )
+                    (ConsoleLispEditor.InvalidateBufferRange editor brightparen 1)
+                  ))
+                  ()
+                )
+              ))
+              brightenparen (lambda (newparen) (
+                (if (> newparen -1)
+                  (let (
+                    maprange (CharacterMap<ConsoleColor>.Item syntaxmap newparen)
+                  ) (
+                    (CharacterRange<ConsoleColor>.Classification maprange ConsoleColor.Gray)
+                    (ConsoleLispEditor.InvalidateBufferRange editor newparen 1)
+                  ))
+                  ()
+                )
+              ))
+            ) (
+              (darkenparen brightopenparen newopenparen)
+              (darkenparen brightcloseparen newcloseparen)
+              (brightenparen newopenparen)
+              (brightenparen newcloseparen)
+              (if (> newopenparen -1)
+                (let (parenpos (ConsoleLispEditor.XYfromBufferPosition editor newopenparen)) (
+                  (setq brightopenparenpos (lsnew
+                    (+ (ValueTuple<int,int>.Item1 parenpos) scrollx)
+                    (+ (ValueTuple<int,int>.Item2 parenpos) scrolly)
+                    ))
+                ))
+                (setq brightopenparenpos ())
+              )
+              (if (> newcloseparen -1)
+                (let (parenpos (ConsoleLispEditor.XYfromBufferPosition editor newcloseparen)) (
+                  (setq brightcloseparenpos (lsnew
+                    (+ (ValueTuple<int,int>.Item1 parenpos) scrollx)
+                    (+ (ValueTuple<int,int>.Item2 parenpos) scrolly)
+                    ))
+                ))
+                (setq brightcloseparenpos ())
+              )
+            ))
+          )))
+        ))
+      ))
+    ))
+
+    (values parenhighlight)
+  ))
+))

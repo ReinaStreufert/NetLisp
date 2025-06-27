@@ -1,0 +1,244 @@
+(require list)
+(require dotnet)
+(require table)
+
+(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Runtime NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    symbautocomplete (tbnew)
+    editor ()
+    updateautocompletesource ()
+    positioninlistinfo ()
+    getargtyperestriction ()
+    getparentrestriction ()
+    List<LispToken>T (dngenerict List`1 LispToken)
+    CharacterMap<TokenClass>T (dngenerict CharacterMap`1 CharacterMapTokenClass)
+    CharacterRange<TokenClass>T (dngenerict CharacterMap`1+CharacterRange CharacterMapTokenClass)
+    % (tbgval (require math) '%)
+    ) (
+    (dnuset CharacterMap<TokenClass>T CharacterMap<TokenClass> (
+      (dnuset CharacterRange<TokenClass>T CharacterRange<TokenClass> (
+        (dnuset List<LispToken>T List<LispToken> (
+          (setq positioninlistinfo (lambda (listitems pos charmap) (
+            (let (
+              items (List<LispToken>.ToArray listitems)
+              result (tbnew)
+              i 0
+              string? (if (< pos (CharacterMap<TokenClass>.Length charmap))
+                (let (
+                  class (CharacterRange<TokenClass>.Classification (CharacterMap<TokenClass>.Item charmap pos))
+                  ) (
+                  (or (= class CharacterMapTokenClass.String) (= class CharacterMapTokenClass.StringEscaped))
+                  ))
+                (values false)
+                )
+              ) (
+              (if string?
+                (
+                  (tbsval result 'symbend? false)
+                  (tbsval result 'symbval "")
+                  (tbsval result 'ind -1)
+                  (return-from positioninlistinfo result)
+                  )
+                ()
+                )
+              (lsiter items (lambda (item) (
+                (let (
+                  itempos (SourceReference.Position (LispToken.SourceLocation item))
+                  itemrange (CharacterMap<TokenClass>.Item charmap itempos)
+                  itemlen (CharacterRange<TokenClass>.Length itemrange)
+                  itemsymb? (= (LispToken.Type item) LispDataType.Symbol)
+                  rangeclass (CharacterRange<TokenClass>.Classification itemrange)
+                  return false
+                  ) (
+                  (if (= pos (+ itempos itemlen))
+                    (if itemsymb?
+                      (
+                        (tbsval result 'symbend? true)
+                        (tbsval result 'symbval (LispSymbol.Value item))
+                        (tbsval result 'ind i)
+                        (setq return true)
+                        )
+                      (
+                        (tbsval result 'symbend? false)
+                        (tbsval result 'symbval "")
+                        (tbsval result 'ind i)
+                        (setq return true)
+                        )
+                      )
+                    (if (and (> pos (- itempos 1)) (< pos (+ itempos itemlen)))
+                      (if itemsymb?
+                        (
+                          (tbsval result 'symbend? false)
+                          (tbsval result 'symbval (LispSymbol.Value item))
+                          (tbsval result 'ind i)
+                          (setq return true)
+                          )
+                        (
+                          (tbsval result 'symbend? false)
+                          (tbsval result 'symbval "")
+                          (tbsval result 'ind i)
+                          (setq return true)
+                          )
+                        )
+                      (if (> itempos pos)
+                        (
+                          (tbsval result 'symbend? true)
+                          (tbsval result 'symbval "")
+                          (tbsval result 'ind i)
+                          (setq return true)
+                          )
+                        ()
+                        )
+                      )
+                    )
+                  (setq i (+ i 1))
+                  (if return
+                    (return-from positioninlistinfo result)
+                    ()
+                    )
+                  ))
+                )))
+              (tbsval result 'symbend? true)
+              (tbsval result 'symbval "")
+              (tbsval result 'ind i)
+              (values result)
+              ))
+            )))
+          (setq getargtyperestriction (lambda (listscope argind) (
+            (let (
+              sexpr (ListScopeAnalysis.SourceList listscope)
+              keyworditem (List<LispToken>.Item (LispList.Items sexpr) 0)
+              keywordval ()
+              ) (
+              (if (= (LispToken.Type keyworditem) LispDataType.Symbol)
+                (
+                  (setq keywordval (Scope.Get (ListScopeAnalysis.InnerBuiltScope listscope) (LispSymbol.Value keyworditem)))
+                  (if (= keywordval ())
+                    (setq keywordval (Scope.Get (ListScopeAnalysis.InnerGlobalScope listscope) (LispSymbol.Value keyworditem)))
+                    ()
+                    )
+                  )
+                (setq keywordval (lsnew))
+                )
+              (if (= keywordval ())
+                (MetadataTypeRestrictions:AnyType)
+                (if (LispToken.TypeCanBeExecuted keywordval)
+                  (if (or (= (LispToken.Type keywordval) LispDataType.Function) (= (LispToken.Type keywordval) LispDataType.Macro))
+                    (if (< argind (ArgumentDefinedLispRoutine.ArgumentCount keywordval))
+                      (ParamMetadataEntry.TypeRestrictions
+                        (ArgumentDefinedMetadata.GetArgument (ArgumentDefinedLispRoutine.InstanceMetadata keywordval) argind))
+                      (MetadataTypeRestrictions:NoType)
+                      )
+                    (ParamMetadataEntry.TypeRestrictions
+                      (ExecutableTokenMetadata.AnyArgument (ExecutableLispToken.Metadata keywordval)))
+                    )
+                  (if (LispTypeInfo.Compare (LispToken.GetTypeInfo keywordval) (AnalysisToken:AnalysisTokenExtendedTypeInfo))
+                    (let (analysisdef (AnalysisToken.PotentialExecutableDefinition keywordval)) (
+                      (if (= analysisdef ())
+                        (MetadataTypeRestrictions:AnyType)
+                        (if (or (= (LispToken.Type analysisdef) LispDataType.Function) (= (LispToken.Type analysisdef) LispDataType.Macro))
+                          (if (< argind (ArgumentDefinedLispRoutine.ArgumentCount analysisdef))
+                            (ParamMetadataEntry.TypeRestrictions
+                              (ArgumentDefinedMetadata.GetArgument (ArgumentDefinedLispRoutine.InstanceMetadata analysisdef) argind))
+                            (MetadataTypeRestrictions:NoType)
+                            )
+                          (ParamMetadataEntry.TypeRestrictions
+                            (ExecutableTokenMetadata.AnyArgument (ExecutableLispToken.Metadata analysisdef)))
+                          )
+                        )
+                      ))
+                    (MetadataTypeRestrictions:AnyType)
+                    )
+                  )
+                )
+              ))
+            )))
+          (setq getparentrestriction (lambda (listscope) (
+            (let (
+              parentlistscope (ListScopeAnalysis.ParentList listscope)
+              argitem (ListScopeAnalysis.SourceList listscope)
+              ) (
+              (if (= parentlistscope ())
+                (MetadataTypeRestrictions:AnyType)
+                (let (
+                  parentitems (List<LispToken>.ToArray (LispList.Items (ListScopeAnalysis.SourceList parentlistscope)))
+                  ind 0
+                  ) (
+                  (lsiter parentitems (lambda (item) (
+                    (if (= item argitem)
+                      (if (> ind 0)
+                        (return-from getparentrestriction (getargtyperestriction parentlistscope (- ind 1)))
+                        (return-from getparentrestriction (MetadataTypeRestrictions:AnyType))
+                        )
+                      ()
+                      )
+                    (setq ind (+ ind 1))
+                    )))
+                  (MetadataTypeRestrictions:AnyType)
+                  ))
+                )
+              ))
+            )))
+          ))
+        ))
+      ))
+    (setq updateautocompletesource (lambda (listscope charmap) (
+      (let (
+        writingstyle (ListScopeAnalysis.InnerWritingStyle listscope)
+        items (LispList.Items (ListScopeAnalysis.SourceList listscope))
+        cursorpos (ConsoleLispEditor.CursorPosition editor)
+        positioninfo (positioninlistinfo items cursorpos charmap)
+        canautocomplete false
+        typerestrictions (MetadataTypeRestrictions:AnyType)
+        filtertype ScopeAnalysisAutocompleteType.All
+        ) (
+        (if (tbgval positioninfo 'symbend?)
+          (if (= writingstyle LispWritingStyle.SExpression)
+            (
+              (setq canautocomplete true)
+              (if (> (tbgval positioninfo 'ind) 0)
+                (
+                  (setq filtertype ScopeAnalysisAutocompleteType.MatchingValues)
+                  (setq typerestrictions (getargtyperestriction listscope (- (tbgval positioninfo 'ind) 1)))
+                  )
+                (
+                  (setq filtertype ScopeAnalysisAutocompleteType.MatchingRoutines)
+                  (setq typerestrictions (getparentrestriction listscope))
+                  )
+                )
+              )
+            (if (= writingstyle LispWritingStyle.SExpressionDefinitionList)
+              (setq canautocomplete (> (% (- (tbgval positioninfo 'ind) 1) 2) 0))
+              (if (= writingstyle LispWritingStyle.IsolatedDefinitionList)
+                (setq canautocomplete (> (% (tbgval positioninfo 'ind) 2) 0))
+                ()
+                )
+              )
+            )
+          ()
+          )
+        (if canautocomplete
+          (ConsoleLispEditor.AutocompleteSource editor
+            (AutocompleteSource:FromScopeAnalysis listscope (tbgval positioninfo 'symbval) typerestrictions filtertype))
+          ()
+          )
+        ))
+      )))
+    (tbsval symbautocomplete 'scriptinit (lambda (neweditor) (
+      (setq editor neweditor)
+      )))
+    (tbsval symbautocomplete 'sourceproc (lambda () (
+      (let (
+        sourceanalysis (ConsoleLispEditor.BufferAnalysis editor)
+        charmap (SourceAnalysis.CharacterMap sourceanalysis)
+        listscope (SourceAnalysis.SearchExpressionScopeData sourceanalysis (ConsoleLispEditor.CursorPosition editor))
+        ) (
+          (if (= listscope ())
+            ()
+            (updateautocompletesource listscope charmap)
+            )
+        ))
+      )))
+    (values symbautocomplete)
+    ))
+  ))

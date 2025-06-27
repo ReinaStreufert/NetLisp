@@ -1,0 +1,148 @@
+(require list)
+(require table)
+(require text)
+(require dotnet)
+
+(dnuse (System System.Collections.Generic System.Text NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    indenting (tbnew)
+    editor ()
+    spacecount 2
+    linelevel ()
+    linespaces ()
+    countparens ()
+    linecharx ()
+    floor (tbgval (require math) 'floor)
+    ValueTuple<int,int>T (dngenerict ValueTuple`2 Int32 Int32)
+    List<int>T (dngenerict List`1 Int32)
+  ) (
+    (dnuset ValueTuple<int,int>T ValueTuple<int,int> (
+      (setq linespaces (lambda (lineind) (
+        (let (
+          linerang (ConsoleLispEditor.GetLineBufferRange editor lineind)
+          linestart (ValueTuple<int,int>.Item1 linerang)
+          linelen (ValueTuple<int,int>.Item2 linerang)
+          buffer (ConsoleLispEditor.Buffer editor)
+          substr (StringBuilder.ToString buffer linestart linelen)
+          spaces (- (txlen substr) (txlen (txtrims substr " ")))
+        ) (
+          (values spaces)
+        ))
+      )))
+      (setq linelevel (lambda (lineind) (
+        (floor (/ (linespaces lineind) spacecount))
+      )))
+      (setq countparens (lambda (lineind oldcursorpos) (
+        (let (
+          linerang (ConsoleLispEditor.GetLineBufferRange editor lineind)
+          linestart (ValueTuple<int,int>.Item1 linerang)
+          looklen (- oldcursorpos linestart)
+          buffer (ConsoleLispEditor.Buffer editor)
+          substr (StringBuilder.ToString buffer linestart looklen)
+          parencount 0
+        ) (
+          (txiterc substr (lambda (char) (
+            (if (= char "(")
+              (setq parencount (+ parencount 1))
+              (if (= char ")")
+                (setq parencount (- parencount 1))
+                ()
+              )
+            )
+          )))
+          (if (> parencount 0)
+            (values 1)
+            (if (< parencount 0)
+              (values -1)
+              (values 0)
+            )
+          )
+        ))
+      )))
+      (setq linecharx (lambda (lineind pos) (
+        (let (
+          linerang (ConsoleLispEditor.GetLineBufferRange editor lineind)
+          linestart (ValueTuple<int,int>.Item1 linerang)
+        ) (
+          (- pos linestart)
+        ))
+      )))
+      (tbsval indenting 'scriptinit (lambda (neweditor) (
+        (setq editor neweditor)
+        (bindkey "Tab" (lambda (keyinfo) (
+          (let (
+            cursorpos (ConsoleLispEditor.CursorPosition editor)
+            lineind (ConsoleLispEditor.LineIndexFromBufferPosition editor cursorpos)
+            linerang (ConsoleLispEditor.GetLineBufferRange editor lineind)
+            linestart (ValueTuple<int,int>.Item1 linerang)
+            cursorxchar (- cursorpos linestart)
+            newpos (+ linestart (* (+ (floor (/ cursorxchar spacecount)) 1) spacecount))
+            spaces (- newpos cursorpos)
+            buffer (ConsoleLispEditor.Buffer editor)
+            cursorscrpos (ConsoleLispEditor.XYfromBufferPosition editor cursorpos)
+            cursorposx (ValueTuple<int,int>.Item1 cursorscrpos)
+            cursorposy (ValueTuple<int,int>.Item2 cursorscrpos)
+          ) (
+            (StringBuilder.Insert buffer cursorpos (txrepeat " " spaces))
+            (ConsoleLispEditor.MoveLineBreaks editor cursorpos spaces)
+            (ConsoleLispEditor.ProcessSourceChange editor)
+            (ConsoleLispEditor.InvalidateRegion editor cursorposx cursorposy (- (ConsoleLispEditor.WindowWidth editor) cursorposx) 1)
+            (ConsoleLispEditor.CursorPosition editor newpos)
+            (ConsoleLispEditor.ScrollCursorIntoView editor)
+          ))
+          (values true)
+        )))
+      )))
+    ))
+    (dnuset List<int>T List<int> (
+      (tbsval indenting 'linebreak (lambda (oldcursorpos selectionreplaced breaklist) (
+        (let (
+          oldline (ConsoleLispEditor.LineIndexFromBufferPosition editor oldcursorpos)
+          oldlinelevel (linelevel oldline)
+          oldlineparenstate (countparens oldline oldcursorpos)
+          newlinelevel (+ oldlinelevel oldlineparenstate)
+          newspacecount (* newlinelevel spacecount)
+          indentstr (txrepeat " " newspacecount)
+          cursorpos (ConsoleLispEditor.CursorPosition editor)
+          buffer (ConsoleLispEditor.Buffer editor)
+        ) (
+          (StringBuilder.Insert buffer cursorpos indentstr)
+          (ConsoleLispEditor.CursorPosition editor (+ cursorpos newspacecount))
+          (setq cursorpos (ConsoleLispEditor.CursorPosition editor))
+          (if (< cursorpos (StringBuilder.Length buffer))
+            (if (= (Object.ToString (StringBuilder.Chars buffer cursorpos)) ")")
+              (
+                (StringBuilder.Insert buffer cursorpos (txconc "\r\n" indentstr))
+                (List<int>.Add breaklist (+ cursorpos 1))
+              )
+              ()
+            )
+            ()
+          )
+        ))
+      )))
+    ))
+    (tbsval indenting 'backspace (lambda (oldcursorpos selectionreplaced) (
+      (let (
+        cursorpos (ConsoleLispEditor.CursorPosition editor)
+        lineind (ConsoleLispEditor.LineIndexFromBufferPosition editor cursorpos)
+        spaces (linespaces lineind)
+        cursorcharx (linecharx lineind cursorpos)
+      ) (
+        (if (= spaces cursorcharx)
+          (let (
+            newspaces (* (floor (/ spaces spacecount)) spacecount)
+            difference (- spaces newspaces)
+            buffer (ConsoleLispEditor.Buffer editor)
+          ) (
+            (StringBuilder.Remove buffer (- cursorpos difference) difference)
+            (ConsoleLispEditor.CursorPosition editor (- cursorpos difference))
+          ))
+          ()
+        )
+      ))
+    )))
+
+    (values indenting)
+  ))
+))

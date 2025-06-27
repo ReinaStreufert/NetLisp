@@ -1,0 +1,155 @@
+(require list)
+(require table)
+(require dotnet)
+(require text)
+
+(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    pathautocomplete (tbnew)
+    editor ()
+    stringtokfrompositioninlist ()
+    updateautocompletesource ()
+    autocompletecache ()
+    escapedpostounescapedpos ()
+    List<LispToken>T (dngenerict List`1 LispToken)
+    CharacterMap<TokenClass>T (dngenerict CharacterMap`1 CharacterMapTokenClass)
+    CharacterRange<TokenClass>T (dngenerict CharacterMap`1+CharacterRange CharacterMapTokenClass)
+    pathkeywords '("lsp" "cd" ":" "::" "~" "~~" "subfiles" "subdirs" "workdir"
+      "sworkdir" "fexists?" "finfotb" "dexists?" "dinfotb" "movef" "moved" "deletef"
+      "deleted" "createpath" "copyf" "copydr" "reada" "writea" "readatx" "writeatx"
+      "openfr" "openfrw" "parentpath" "pathconc" "pathname" "segmentpath" "constructpath"
+      "inpipe" "outpipe" "bipipe" "open" "save")
+    ) (
+    (setq escapedpostounescapedpos (lambda (str escapedpos) (
+      (let (
+        unescapedpos 0
+        i 0
+        escapenext false
+        ) (
+        (txiterc str (lambda (char) (
+          (if (< i escapedpos)
+            (
+              (if escapenext
+                (setq escapenext false)
+                (
+                  (setq unescapedpos (+ unescapedpos 1))
+                  (if (= char "\\")
+                    (setq escapenext true)
+                    ()
+                    )
+                  )
+                )
+              (setq i (+ i 1))
+              )
+            (return-from txiterc)
+          )
+          )))
+        (if (or escapenext (< escapedpos 0))
+          (values -1)
+          (values unescapedpos)
+          )
+        ))
+      )))
+    (dnuset List<LispToken>T List<LispToken> (
+      (dnuset CharacterMap<TokenClass>T CharacterMap<TokenClass> (
+        (dnuset CharacterRange<TokenClass>T CharacterRange<TokenClass> (
+          (setq stringtokfrompositioninlist (lambda (listitems pos charmap) (
+            (let (
+              items (List<LispToken>.ToArray listitems)
+              range (CharacterMap<TokenClass>.Item charmap pos)
+              rangestart (CharacterRange<TokenClass>.Start range)
+              class (CharacterRange<TokenClass>.Classification range)
+              laststr ()
+              ) (
+              (if (or (= class CharacterMapTokenClass.String) (= class CharacterMapTokenClass.StringEscaped))
+                (
+                  (lsiter items (lambda (item) (
+                    (if (> (SourceReference.Position (LispToken.SourceLocation item)) rangestart)
+                      (return-from stringtokfrompositioninlist laststr)
+                      ()
+                      )
+                    (if (= (LispToken.Type item) LispDataType.String)
+                      (if (= (SourceReference.Position (LispToken.SourceLocation item)) rangestart)
+                        (return-from stringtokfrompositioninlist item)
+                        (setq laststr item)
+                        )
+                      ()
+                      )
+                    )))
+                    (return-from stringtokfrompositioninlist laststr)
+                  )
+                (lsnew)
+                )
+              ))
+            )))
+          ))
+        ))
+        (setq updateautocompletesource (lambda (listscope charmap) (
+          (let (
+            writingstyle (ListScopeAnalysis.InnerWritingStyle listscope)
+            items (LispList.Items (ListScopeAnalysis.SourceList listscope))
+            firstitem (if (> (List<LispToken>.Count items) 0)
+              (List<LispToken>.Item items 0)
+              (lsnew)
+              )
+            firstitemsymb? (if (= firstitem ())
+              (values false)
+              (= (LispToken.Type firstitem) LispDataType.Symbol)
+              )
+            cursorpos (ConsoleLispEditor.CursorPosition editor)
+            stringtok (stringtokfrompositioninlist items cursorpos charmap)
+            stringtok? (not (= (typestr stringtok) "list"))
+            ;canautocomplete false
+            ) (
+              (if (and firstitemsymb? stringtok? (= writingstyle LispWritingStyle.SExpression))
+                (lsiter pathkeywords (lambda (keyword) (
+                  (if (= keyword (LispSymbol.Value firstitem))
+                    (let (
+                      stringpos (SourceReference.Position (LispToken.SourceLocation stringtok))
+                      posinescapedstring (- (- cursorpos stringpos) 1)
+                      stringval (LispString.Value stringtok)
+                      posinstring (escapedpostounescapedpos (txrepl stringval "\\" "\\\\") posinescapedstring)
+                      textcut (if (> posinstring -1)
+                        (txrang stringval 0 posinstring)
+                        ()
+                        )
+                      ) (
+                      (if (< posinstring 0)
+                        (return-from updateautocompletesource)
+                        ()
+                        )
+                      (if (= autocompletecache ())
+                        (setq autocompletecache (AutocompleteSource+AutocompleteCache:CreatePathCache))
+                        ()
+                        )
+                      (ConsoleLispEditor.AutocompleteSource editor (AutocompleteSource:FromFilesystemPath autocompletecache textcut))
+                      (return-from updateautocompletesource)
+                      ))
+                    ()
+                    )
+                  )))
+                ()
+                )
+              (setq autocompletecache ())
+            ))
+          )))
+      ))
+      (tbsval pathautocomplete 'scriptinit (lambda (neweditor) (
+        (setq editor neweditor)
+        )))
+      (tbsval pathautocomplete 'inputproc (lambda () (
+        (let (
+          sourceanalysis (ConsoleLispEditor.BufferAnalysis editor)
+          charmap (SourceAnalysis.CharacterMap sourceanalysis)
+          listscope (SourceAnalysis.SearchExpressionScopeData sourceanalysis (ConsoleLispEditor.CursorPosition editor))
+          ) (
+          (if (= listscope ())
+            ()
+            (updateautocompletesource listscope charmap)
+            )
+          ))
+        )))
+
+      (values pathautocomplete)
+    ))
+  ))

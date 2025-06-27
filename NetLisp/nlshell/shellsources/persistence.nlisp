@@ -1,0 +1,25 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (nlshell) (
+  (let (
+    filesystem (require filesystem)
+    nlctx (tbgval nlshell 'nlctx)
+    ) (
+    (tbuse filesystem (
+      (define makebuffer (lambda (text) (
+        (NLShellContext.SetOpenBuffer nlctx text)
+        )))
+      (define getsavebuffer (lambda () (
+        (NLShellContext.GetSavedBuffer nlctx)
+        )))
+      (define open (lambda (path) (
+        (makebuffer (readatx path))
+        )))
+      (define save (lambda (path) (
+        (writeatx path (getsavebuffer))
+        )))
+      ))
+    ))
+  ))

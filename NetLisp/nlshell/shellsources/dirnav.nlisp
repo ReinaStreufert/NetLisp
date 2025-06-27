@@ -1,0 +1,79 @@
+(require list)
+(require table)
+(require text)
+
+(let (
+  filesystem (require filesystem)
+  datetime (require datetime)
+  outputhelpers (load "shellsources\\outputhelpers.nlisp")
+) (
+  (tbuse filesystem (
+    (define cd sworkdir)
+    (tbuse outputhelpers (
+      (tbuse datetime (
+        (define ls (lambda () (
+          (lsp (workdir))
+        )))
+        (define lsp (lambda (listpath) (
+          (let (
+            colpairs ()
+            typecol ()
+            lastmodcol ()
+            sizecol ()
+            namecol ()
+            fsinfotb ()
+            listdir ()
+          ) (
+            (if (dexists? listpath)
+              (
+                (setq listdir (tbgval (dinfotb listpath) 'fullpath))
+                (lsiter (subdirs listpath) (lambda (path) (
+                  (setq fsinfotb (dinfotb path))
+                  (setq typecol (lspush typecol "directory"))
+                  (setq lastmodcol (lspush lastmodcol (dtstr (tbgval fsinfotb 'lastmodified))))
+                  (setq sizecol (lspush sizecol ""))
+                  (setq namecol (lspush namecol (pathname path)))
+                )))
+                (lsiter (subfiles listpath) (lambda (path) (
+                  (setq fsinfotb (finfotb path))
+                  (setq typecol (lspush typecol "file"))
+                  (setq lastmodcol (lspush lastmodcol (dtstr (tbgval fsinfotb 'lastmodified))))
+                  (setq sizecol (lspush sizecol (txfromnum (tbgval fsinfotb 'size))))
+                  (setq namecol (lspush namecol (pathname path)))
+                )))
+              )
+              (if (fexists? listpath)
+                (
+                  (setq fsinfotb (finfotb listpath))
+                  (setq listdir (parentpath (tbgval fsinfotb 'fullpath)))
+                  (setq typecol (lspush typecol "file"))
+                  (setq lastmodcol (lspush lastmodcol (dtstr (tbgval fsinfotb 'lastmodified))))
+                  (setq sizecol (lspush sizecol (txfromnum (tbgval fsinfotb 'size))))
+                  (setq namecol (lspush namecol (pathname listpath)))
+                )
+                (
+                  (println "")
+                  (println "No such path exists.")
+                  (println "")
+                  (return-from lsp)
+                )
+              )
+            )
+            (setq colpairs (lsnew
+              (lsnew "Type" typecol)
+              (lsnew "Last modified" lastmodcol)
+              (lsnew "Size" sizecol)
+              (lsnew "Name" namecol)
+            ))
+            (println "")
+            (println (txconc "Directory: " listdir))
+            (println "")
+            (printcolumns colpairs)
+            (println "")
+            (returnvalues)
+          ))
+        )))
+      ))
+    ))
+  ))
+))

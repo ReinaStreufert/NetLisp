@@ -1,0 +1,143 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (System System.Text NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    autoclose (tbnew)
+    editor ()
+    isescaped? ()
+    permeableparens 0
+    freshparens 0
+    permeablequote false
+    freshquote 0
+    CharacterMap<TokenClass>T (dngenerict CharacterMap`1 CharacterMapTokenClass)
+    CharacterRange<TokenClass>T (dngenerict CharacterMap`1+CharacterRange CharacterMapTokenClass)
+  ) (
+    (setq ConsoleKeyInfo.Modifiers (dnexactreturn ConsoleKeyInfo.Modifiers))
+    (tbsval autoclose 'scriptinit (lambda (neweditor) (
+      (setq editor neweditor)
+      (setq permeableparens 0)
+      (setq freshparens 0)
+      (setq permeablequote false)
+      (setq freshquote 0)
+      (bindkey "D0" (lambda (keyinfo) (
+        (if (and (Enum.HasFlag (ConsoleKeyInfo.Modifiers keyinfo) (dnenuminst ConsoleModifiers ConsoleModifiers.Shift))
+                 (> permeableparens 0)
+                 (not permeablequote))
+          (let () (
+            (ConsoleLispEditor.CursorPosition editor (+ (ConsoleLispEditor.CursorPosition editor) 1))
+            (setq permeableparens (- permeableparens 1))
+            (setq freshparens 0)
+            (ConsoleLispEditor.ScrollCursorIntoView editor)
+            (values true)
+          ))
+          (values false)
+        )
+      )))
+      (bindkey "Oem7" (lambda (keyinfo) (
+        (let (cursorpos (ConsoleLispEditor.CursorPosition editor)) (
+          (if (and (Enum.HasFlag (ConsoleKeyInfo.Modifiers keyinfo) (dnenuminst ConsoleModifiers ConsoleModifiers.Shift))
+                   permeablequote
+                   (if (> cursorpos 0)
+                      (not (isescaped? (- cursorpos 1)))
+                      (values true)
+                      )
+                  )
+            (let () (
+              (ConsoleLispEditor.CursorPosition editor (+ cursorpos 1))
+              (setq permeablequote false)
+              (setq freshquote 0)
+              (ConsoleLispEditor.ScrollCursorIntoView editor)
+              (values true)
+            ))
+            (values false)
+          )
+        ))
+      )))
+    )))
+    (dnuset CharacterMap<TokenClass>T CharacterMap<TokenClass> (
+      (dnuset CharacterRange<TokenClass>T CharacterRange<TokenClass> (
+        (setq isescaped? (lambda (pos) (
+          (let (
+            analysis (ConsoleLispEditor.BufferAnalysis editor)
+            charmap (SourceAnalysis.CharacterMap analysis)
+            range (CharacterMap<TokenClass>.Item charmap pos)
+            rangeclass (CharacterRange<TokenClass>.Classification range)
+            rangestart (CharacterRange<TokenClass>.Start range)
+            ) (
+            (and (= rangeclass CharacterMapTokenClass.StringEscaped) (= pos rangestart))
+            ))
+          )))
+        (tbsval autoclose 'charinsert (lambda (oldcursorpos character selectionreplaced) (
+          (if (or (= character "(") (= character "\""))
+            (let (
+              analysis (ConsoleLispEditor.BufferAnalysis editor)
+              charmap (SourceAnalysis.CharacterMap analysis)
+              chartype (if (< oldcursorpos (CharacterMap<TokenClass>.Length charmap))
+                (CharacterRange<TokenClass>.Classification (CharacterMap<TokenClass>.Item charmap oldcursorpos))
+                (values CharacterMapTokenClass.Whitespace)
+              )
+              buffer (ConsoleLispEditor.Buffer editor)
+              cursorpos (ConsoleLispEditor.CursorPosition editor)
+            ) (
+              (if (and (not (= chartype CharacterMapTokenClass.Comment))
+                       (not (= chartype CharacterMapTokenClass.String))
+                       (not (= chartype CharacterMapTokenClass.StringEscaped)))
+                  (if (= character "(")
+                    (
+                      (StringBuilder.Insert buffer cursorpos ")")
+                      (setq permeableparens (+ permeableparens 1))
+                      (setq freshparens 2)
+                    )
+                    (
+                      (StringBuilder.Insert buffer cursorpos "\"")
+                      (setq permeablequote true)
+                      (setq freshquote 2)
+                    )
+                  )
+                  ()
+              )
+            ))
+            ()
+          )
+        )))
+      ))
+    ))
+    (tbsval autoclose 'backspace (lambda (oldcursorpos selectionreplaced) (
+      (if (> freshparens 0)
+        (
+          (StringBuilder.Remove (ConsoleLispEditor.Buffer editor) (ConsoleLispEditor.CursorPosition editor) 1)
+          (setq freshparens 0)
+          (setq permeableparens (- permeableparens 1))
+        )
+        ()
+      )
+      (if (> freshquote 0)
+        (
+          (StringBuilder.Remove (ConsoleLispEditor.Buffer editor) (ConsoleLispEditor.CursorPosition editor) 1)
+          (setq freshquote 0)
+          (setq permeablequote false)
+        )
+        ()
+      )
+    )))
+    (tbsval autoclose 'cursornav (lambda (oldcursorpos selectionupdated) (
+      (setq permeableparens 0)
+      (setq freshparens 0)
+      (setq permeablequote false)
+      (setq freshquote 0)
+    )))
+    (tbsval autoclose 'sourceproc (lambda () (
+      (if (> freshparens 0)
+        (setq freshparens (- freshparens 1))
+        ()
+      )
+      (if (> freshquote 0)
+        (setq freshquote (- freshquote 1))
+        ()
+      )
+    )))
+    (values autoclose)
+  ))
+))

@@ -1,0 +1,209 @@
+(require list)
+(require dotnet)
+(require table)
+
+(dnuse (System System.Text System.Collections.Generic NetLisp.Data NetLisp.Runtime NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    sexprtips (tbnew)
+    editor ()
+    positioninlist ()
+    searchfortiprecursive ()
+    updatetipsource ()
+    updateautocompletesource (tbgval (load "shellsources\\editor\\symbol-autocomplete.nlisp") 'sourceproc)
+    hidetips false
+    List<LispToken>T (dngenerict List`1 LispToken)
+    CharacterMap<TokenClass>T (dngenerict CharacterMap`1 CharacterMapTokenClass)
+    CharacterRange<TokenClass>T (dngenerict CharacterMap`1+CharacterRange CharacterMapTokenClass)
+    ) (
+    (dnuset List<LispToken>T List<LispToken> (
+      (dnuset CharacterMap<TokenClass>T CharacterMap<TokenClass> (
+        (dnuset CharacterRange<TokenClass>T CharacterRange<TokenClass> (
+          (setq positioninlist (lambda (lisplist pos charmap) (
+            (let (
+              buffer (ConsoleLispEditor.Buffer editor)
+              items (List<LispToken>.ToArray (LispList.Items lisplist))
+              ind 0
+              posclass (CharacterRange<TokenClass>.Classification (CharacterMap<TokenClass>.Item charmap pos))
+              isend (and (not (= posclass CharacterMapTokenClass.String))
+                         (not (= posclass CharacterMapTokenClass.StringEscaped))
+                         (= (Char.ToString (StringBuilder.Chars buffer (- pos 1))) " "))
+              ) (
+              (lsiter items (lambda (item) (
+                (let (
+                  itempos (SourceReference.Position (LispToken.SourceLocation item))
+                  ) (
+                  (if (> itempos (- pos 1))
+                    (return-from lsiter)
+                    (setq ind (+ ind 1))
+                    )
+                  ))
+                )))
+              (let (posresult (if (> ind 0) (- ind 1) ind)) (
+                (if isend
+                  (+ posresult 1)
+                  (values posresult)
+                  )
+                ))
+              ))
+            )))
+          ))
+        ))
+        (setq searchfortiprecursive (lambda (listscope argitem) (
+          (if (= listscope ())
+            (lsnew)
+            (let (
+              writingstyle (ListScopeAnalysis.InnerWritingStyle listscope)
+              parentlist (ListScopeAnalysis.ParentList listscope)
+              sourcelist (ListScopeAnalysis.SourceList listscope)
+              sourcelistlen (List<LispToken>.Count (LispList.Items sourcelist))
+              ) (
+              (if (= writingstyle LispWritingStyle.ExecutableBody)
+                (lsnew)
+                (if (and (> sourcelistlen 0)
+                      (or (= writingstyle LispWritingStyle.SExpression)
+                          (= writingstyle LispWritingStyle.SExpressionDefinitionList)
+                          (= writingstyle LispWritingStyle.SpecialSExpression)))
+                  (let (
+                    keyworditem (List<LispToken>.Item (LispList.Items sourcelist) 0)
+                    keywordval ()
+                    ) (
+                    (if (= (LispToken.Type keyworditem) LispDataType.Symbol)
+                      (
+                        (setq keywordval (Scope.Get (ListScopeAnalysis.InnerBuiltScope listscope) (LispSymbol.Value keyworditem)))
+                        (if (= keywordval ())
+                          (setq keywordval (Scope.Get (ListScopeAnalysis.InnerGlobalScope listscope) (LispSymbol.Value keyworditem)))
+                          ()
+                          )
+                        )
+                      ()
+                      )
+                    (if (= keywordval ())
+                      (searchfortiprecursive parentlist sourcelist)
+                      (let () (
+                        (if (LispTypeInfo.Compare (LispToken.GetTypeInfo keywordval) (AnalysisToken:AnalysisTokenExtendedTypeInfo))
+                          (if (not (= (AnalysisToken.PotentialExecutableDefinition keywordval) ()))
+                            (setq keywordval (AnalysisToken.PotentialExecutableDefinition keywordval))
+                            ()
+                            )
+                          ()
+                          )
+                        (if (LispToken.TypeCanBeExecuted keywordval)
+                          (let (
+                            i 0
+                            items (List<LispToken>.ToArray (LispList.Items sourcelist))
+                            argind -1
+                            tiptb (tbnew)
+                            ) (
+                            (lsiter items (lambda (item) (
+                              (if (= item argitem)
+                                (
+                                  (setq argind (- i 1))
+                                  (return-from lsiter)
+                                  )
+                                (setq i (+ i 1))
+                                )
+                              )))
+                            (tbsval tiptb 'keywordtext (LispSymbol.Value keyworditem))
+                            (tbsval tiptb 'keywordval keywordval)
+                            (tbsval tiptb 'argind argind)
+                            (tbsval tiptb 'listscope listscope)
+                            (values tiptb)
+                            ))
+                          (searchfortiprecursive parentlist sourcelist)
+                          )
+                        ))
+                      )
+                    ))
+                  (searchfortiprecursive parentlist sourcelist)
+                  )
+                )
+              ))
+            )
+          )))
+        (setq updatetipsource (lambda (listscope cursorpos charmap) (
+          (let (
+            sourcelist (ListScopeAnalysis.SourceList listscope)
+            posinlist (positioninlist sourcelist cursorpos charmap)
+            argitem (if (< posinlist (List<LispToken>.Count (LispList.Items sourcelist)))
+              (List<LispToken>.Item (LispList.Items sourcelist) posinlist)
+              (lsnew)
+              )
+            searchresult (searchfortiprecursive listscope argitem)
+            ) (
+            (if (not (= searchresult ()))
+              (let (
+                keywordval (tbgval searchresult 'keywordval)
+                metadata (ExecutableLispToken.Metadata keywordval)
+                foundlistscope (tbgval searchresult 'listscope)
+                tipkeyword (tbgval searchresult 'keywordtext)
+                tiparglist ()
+                tiphighlightedarg (if (= foundlistscope listscope)
+                  (- posinlist 1)
+                  (tbgval searchresult 'argind)
+                  )
+                tipannotation ()
+                ) (
+                (if (ExecutableTokenMetadata.HasDefinedArguments metadata)
+                  (
+                    (lsiter (ArgumentDefinedLispRoutine.Arguments keywordval) (lambda (argsymb) (
+                      (setq tiparglist (lspush tiparglist (LispSymbol.Value argsymb)))
+                      )))
+                    (if (> tiphighlightedarg (- (ArgumentDefinedLispRoutine.ArgumentCount keywordval) 1))
+                      (setq tiphighlightedarg -1)
+                      ()
+                      )
+                    (if (> tiphighlightedarg -1)
+                      (setq tipannotation (MetadataEntry.Annotation (ArgumentDefinedMetadata.GetArgument metadata tiphighlightedarg)))
+                      (setq tipannotation (MetadataEntry.Annotation (LispMetadata.GeneralAnnotation metadata)))
+                      )
+                    )
+                  (
+                    (setq tiparglist (lsnew "..."))
+                    (if (> tiphighlightedarg -1)
+                      (
+                        (setq tiphighlightedarg 0)
+                        (setq tipannotation (MetadataEntry.Annotation (ExecutableTokenMetadata.AnyArgument metadata)))
+                        )
+                      (setq tipannotation (MetadataEntry.Annotation (LispMetadata.GeneralAnnotation metadata)))
+                      )
+                    )
+                  )
+                (ConsoleLispEditor.TipSource editor (TipContent.new tipkeyword tiparglist tiphighlightedarg tipannotation))
+                ))
+              ()
+              )
+            ))
+          )))
+      ))
+      (setq ConsoleKeyInfo.Modifiers (dnexactreturn ConsoleKeyInfo.Modifiers))
+      (tbsval sexprtips 'scriptinit (lambda (neweditor) (
+        (setq editor neweditor)
+        (bindkey "T" (lambda (keyinfo) (
+          (updateautocompletesource) ; dont hide the autocomplete on ctrl+t because its confusing
+                                     ; we didnt change the source here so sourceproc wont go off
+          (if (Enum.HasFlag (ConsoleKeyInfo.Modifiers keyinfo) (dnenuminst ConsoleModifiers ConsoleModifiers.Control))
+            (let () (
+              (setq hidetips (not hidetips))
+              (values true)
+              ))
+            (values false)
+            )
+          )))
+        )))
+      (tbsval sexprtips 'inputproc (lambda () (
+        (let (
+          sourceanalysis (ConsoleLispEditor.BufferAnalysis editor)
+          charmap (SourceAnalysis.CharacterMap sourceanalysis)
+          cursorpos (ConsoleLispEditor.CursorPosition editor)
+          listscope (SourceAnalysis.SearchExpressionScopeData sourceanalysis cursorpos)
+          ) (
+          (if (or (= listscope ()) hidetips)
+            ()
+            (updatetipsource listscope cursorpos charmap)
+            )
+          ))
+        )))
+
+      (values sexprtips)
+    ))
+  ))

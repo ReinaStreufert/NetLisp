@@ -1,0 +1,118 @@
+(require dotnet)
+
+(dnloadasm "System.Diagnostics.Process")
+(dnuse (System.Diagnostics System.IO) (
+  (define : (lambda (filename) (
+    (let (proc (Process:Start filename)) (
+      (Process.WaitForExit proc)
+      (returnvalues)
+      ))
+    )))
+  (define :: (lambda (filename args) (
+    (let (proc (Process:Start filename args)) (
+      (Process.WaitForExit proc)
+      (returnvalues)
+      ))
+    )))
+  (define ~ (lambda (filename) (
+    (let (psi (ProcessStartInfo.new filename)) (
+      (ProcessStartInfo.UseShellExecute psi true)
+      (Process:Start psi)
+      (returnvalues)
+      ))
+    )))
+  (define ~~ (lambda (filename args) (
+    (let (psi (ProcessStartInfo.new filename args)) (
+      (ProcessStartInfo.UseShellExecute psi true)
+      (Process:Start psi)
+      (returnvalues)
+      ))
+    )))
+  (define inpipe (lambda (filename args) (
+    (let (
+      psi (ProcessStartInfo.new filename args)
+      ) (
+      (ProcessStartInfo.UseShellExecute psi false)
+      (ProcessStartInfo.RedirectStandardOutput psi true)
+      (Process:Start psi)
+      ))
+    )))
+  (define outpipe (lambda (filename args) (
+    (let (
+      psi (ProcessStartInfo.new filename args)
+      proc ()
+      ) (
+      (ProcessStartInfo.UseShellExecute psi false)
+      (ProcessStartInfo.RedirectStandardInput psi true)
+      (Process:Start psi)
+      ))
+    )))
+  (define bipipe (lambda (filename args) (
+    (let (
+      psi (ProcessStartInfo.new filename args)
+      proc ()
+      ) (
+      (ProcessStartInfo.UseShellExecute psi false)
+      (ProcessStartInfo.RedirectStandardInput psi true)
+      (ProcessStartInfo.RedirectStandardOutput psi true)
+      (Process:Start psi)
+      ))
+    )))
+  (let (
+    async (require async)
+    buffer (require buffer)
+    ) (
+    (tbuse async (
+      (tbuse buffer (
+        (define readpipe (lambda (inproc) (
+          (StreamReader.ReadToEnd (Process.StandardOutput inproc))
+          )))
+        (define readpipeb (lambda (inproc) (
+          (let (ms (MemoryStream:new) buf) (
+            (Stream.CopyTo (StreamReader.BaseStream (Process.StandardOutput inproc)) ms)
+            (setq buf (bhandlefromdnbytearray (MemoryStream.ToArray ms)))
+            (Stream.Dispose ms)
+            (values buf)
+            ))
+          )))
+        (define writepipe (lambda (str outproc) (
+          (StreamWriter.Write (Process.StandardInput outproc) str)
+          (StreamWriter.Close (Process.StandardInput outproc))
+          (values outproc)
+          )))
+        (define writepipeb (lambda (buf outproc) (
+          (Stream.Write (StreamWriter.BaseStream (Process.StandardInput outproc))
+            (dnbytearrayfrombhandle buf) 0 (buflen buf))
+          (StreamWriter.Close (Process.StandardInput outproc))
+          (values outproc)
+          )))
+        (define quiet (lambda (proc) (
+          (Process.WaitForExit proc)
+          )))
+        (define | (lambda (inproc outproc) (
+          ((alambda () (
+            (let (
+              readstream (StreamReader.BaseStream (Process.StandardOutput inproc))
+              writestream (StreamWriter.BaseStream (Process.StandardInput outproc))
+              buflen 1024
+              copybuf (createbuf buflen)
+              copybufarr (dnbytearrayfrombhandle copybuf)
+              ) (
+              ((lambda () (
+                (let (read (Stream.Read readstream copybufarr 0 buflen)) (
+                  (Stream.Write writestream copybufarr 0 read)
+                  (if (< read buflen)
+                    (releasebuf copybuf)
+                    (runitback)
+                    )
+                  ))
+                )))
+              (Stream.Close writestream)
+              ))
+            )))
+          ;(values outproc)
+          )))
+        ))
+      ))
+    ))
+  ))

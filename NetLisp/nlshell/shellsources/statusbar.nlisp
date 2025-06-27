@@ -1,0 +1,58 @@
+(require list)
+(require table)
+
+(let (
+  console (require console)
+  datetime (require datetime)
+  updatestatusbar ()
+  calcstatusbarxyw ()
+) (
+  (tbuse console (
+    (setq calcstatusbarxyw (lambda () (
+      (let (
+        scrollxy (windowscrollpos)
+        sizexy (windowsize)
+        scrollx (lsfirst scrollxy)
+        scrolly (lslast scrollxy)
+        sizex (lsfirst sizexy)
+        sizey (lslast sizexy)
+      ) (
+        (lsnew scrollx (+ scrolly (- sizey 1)) sizex)
+      ))
+    )))
+    (tbuse datetime (
+      (setq updatestatusbar (lambda () (
+        (let (
+          returnpos (cursorpos)
+          newxyw (calcstatusbarxyw)
+          statustext (txconclist (lsnew " " (dtstr (now)) " / NLShell"))
+          textlen (txlen statustext)
+          blankspace (- (lslast newxyw) textlen)
+          newy (lsn newxyw 1)
+        ) (
+          (hidecursor)
+          (movecursor (lsrang newxyw 0 2))
+          (if (< (- newy (lslast returnpos)) 5)
+            (
+              (print (txrepeat " " (lslast newxyw)))
+              (setq newxyw (lsrepln newxyw 1 (+ newy 1)))
+              (resizebuffer (lsrepln (buffersize) 1 (+ newy 2)))
+              (movecursor (lsrang newxyw 0 2))
+            )
+            ()
+          )
+          (bcolor color-magenta)
+          (fcolor color-white)
+          (print statustext)
+          (print (txrepeat " " blankspace))
+          (bcolor color-black)
+          (fcolor color-magenta)
+          (movecursor returnpos)
+          (showcursor)
+        ))
+      )))
+    ))
+
+    (values updatestatusbar)
+  ))
+))

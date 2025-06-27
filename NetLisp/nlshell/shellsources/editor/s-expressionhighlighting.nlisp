@@ -1,0 +1,84 @@
+(require list)
+(require table)
+(require dotnet)
+
+(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+  (let (
+    sexprhighlight (tbnew)
+    editor ()
+    highlightlist ()
+    List<LispToken>T (dngenerict List`1 LispToken)
+    CharacterMap<ConsoleColor>T (dngenerict CharacterMap`1 ConsoleColor)
+    CharacterRange<ConsoleColor>T (dngenerict CharacterMap`1+CharacterRange ConsoleColor)
+    List<ListScopeAnalysis>T (dngenerict List`1 ListScopeAnalysis)
+  ) (
+    (tbsval sexprhighlight 'scriptinit (lambda (neweditor) (
+      (setq editor neweditor)
+    )))
+    (dnuset List<LispToken>T List<LispToken> (
+      (dnuset CharacterMap<ConsoleColor>T CharacterMap<ConsoleColor> (
+        (dnuset CharacterRange<ConsoleColor>T CharacterRange<ConsoleColor> (
+          (dnuset List<ListScopeAnalysis>T List<ListScopeAnalysis> (
+            (setq highlightlist (lambda (listanalysis syntaxmap) (
+              (if (and (or (= (ListScopeAnalysis.InnerWritingStyle listanalysis) LispWritingStyle.SExpression)
+                           (= (ListScopeAnalysis.InnerWritingStyle listanalysis) LispWritingStyle.SpecialSExpression)
+                           (= (ListScopeAnalysis.InnerWritingStyle listanalysis) LispWritingStyle.SExpressionDefinitionList)
+                           (= (ListScopeAnalysis.InnerWritingStyle listanalysis) LispWritingStyle.MetadataEntry))
+                       (> (List<LispToken>.Count (LispList.Items (ListScopeAnalysis.SourceList listanalysis))) 0))
+                (let (
+                  firstitem (List<LispToken>.Item (LispList.Items (ListScopeAnalysis.SourceList listanalysis)) 0)
+                  sourcepos (SourceReference.Position (LispToken.SourceLocation firstitem))
+                  itemrange (CharacterMap<ConsoleColor>.Item syntaxmap sourcepos)
+                  newcolor (if (= (ListScopeAnalysis.InnerWritingStyle listanalysis) LispWritingStyle.MetadataEntry)
+                    ConsoleColor.Green
+                    ConsoleColor.Magenta
+                    )
+                ) (
+                  (if (= (LispToken.Type firstitem) LispDataType.Symbol)
+                    (CharacterRange<ConsoleColor>.Classification itemrange newcolor)
+                    ()
+                  )
+                ))
+                ()
+              )
+              (let (
+                childrenlist (ListScopeAnalysis.ChildLists listanalysis)
+                childrencount (List<ListScopeAnalysis>.Count childrenlist)
+              ) (
+                ((lambda (i) (
+                  (if (< i childrencount)
+                    (
+                      (highlightlist (List<ListScopeAnalysis>.Item childrenlist i) syntaxmap)
+                      (runitback (+ i 1))
+                    )
+                    ()
+                  )
+                )) 0)
+              ))
+            )))
+            (tbsval sexprhighlight 'sourceproc (lambda () (
+              (let (
+                sourceanalysis (ConsoleLispEditor.BufferAnalysis editor)
+                syntaxmap (ConsoleLispEditor.BufferSyntaxHighlighting editor)
+                analysislist (SourceAnalysis.ExpressionScopeData sourceanalysis)
+                analysiscount (List<ListScopeAnalysis>.Count analysislist)
+              ) (
+                ((lambda (i) (
+                  (if (< i analysiscount)
+                    (
+                      (highlightlist (List<ListScopeAnalysis>.Item analysislist i) syntaxmap)
+                      (runitback (+ i 1))
+                    )
+                    ()
+                  )
+                )) 0)
+              ))
+            )))
+          ))
+        ))
+      ))
+    ))
+
+    (values sexprhighlight)
+  ))
+))

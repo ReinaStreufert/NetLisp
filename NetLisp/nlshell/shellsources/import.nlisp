@@ -1,0 +1,9 @@
+(require list)
+(require table)
+
+(define import (macro (module) (
+  (lsnew (quote let)
+    (lsnew (quote loadresult) (lsnew (quote require) (quote module)))
+    (lsnew (lsnew (quote tbunpack) (quote loadresult)))
+  )
+)))

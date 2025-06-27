@@ -1,0 +1,82 @@
+(require list)
+(require table)
+(require text)
+
+(let (
+  outputhelperstb (tbnew)
+  math (require math)
+  console (require console)
+  columnspacing 3
+) (
+  (tbuse math (
+    (tbuse console (
+      (tbsval outputhelperstb 'printcolumns (lambda (colpairs) (
+        (let (colwidths () i 0) (
+          ; first determine max widths of each column
+          (lsiter colpairs (lambda (colpair) (
+            (setq colwidths (lspush colwidths (maxlist (lsmap
+              (lspush (lslast colpair) (lsfirst colpair)) (lambda (rowval) (
+              (+ (txlen rowval) columnspacing)
+            ))))))
+          )))
+          ; print column headers
+          (lsiter colpairs (lambda (colpair) (
+            (let (
+              title (lsfirst colpair)
+              colwidth (lsn colwidths i)
+              unusedwidth (- colwidth (txlen title))
+            ) (
+              (print (txconc title (txrepeat " " unusedwidth)))
+            ))
+            (setq i (+ i 1))
+          )))
+          (println "")
+          ; print dividers
+          (setq i 0)
+          (lsiter colpairs (lambda (colpair) (
+            (print (txconc (txrepeat "-" (- (lsn colwidths i) columnspacing)) (txrepeat " " columnspacing)))
+            (setq i (+ i 1))
+          )))
+          (println "")
+          ; print rows
+          (let (
+            rowlen (maxlist (lsmap colpairs (lambda (colpair) (
+              (lslen (lslast colpair))
+            ))))
+          ) (
+            ((lambda (rowi) (
+              (if (< rowi rowlen)
+                (
+                  (setq i 0)
+                  (lsiter colpairs (lambda (colpair) (
+                    (let (
+                      rowlist (lslast colpair)
+                      thisrow ()
+                      colwidth (lsn colwidths i)
+                      unusedwidth ()
+                    ) (
+                      (if (< rowi (lslen rowlist))
+                        (
+                          (setq thisrow (lsn rowlist rowi))
+                          (setq unusedwidth (- colwidth (txlen thisrow)))
+                          (print (txconc thisrow (txrepeat " " unusedwidth)))
+                        )
+                        (print (txrepeat " " colwidth))
+                      )
+                      (setq i (+ i 1))
+                    ))
+                  )))
+                  (println "")
+                  (runitback (+ rowi 1))
+                )
+                ()
+              )
+            )) 0)
+          ))
+        ))
+      )))
+    ))
+  ))
+
+  (values outputhelperstb)
+))

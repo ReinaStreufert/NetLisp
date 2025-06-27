@@ -1,0 +1,110 @@
+(require list)
+(require table)
+(require text)
+
+(let (
+  console (require console)
+  ) (
+  (tbuse console (
+    (define plot2d (lambda (size bounds lines? callback) (
+      (let (
+        sizex (lsfirst size)
+        sizey (lslast size)
+        paintstr (txrepeat " " sizex)
+        minx (lsn bounds 0)
+        miny (lsn bounds 1)
+        maxx (lsn bounds 2)
+        maxy (lsn bounds 3)
+        rangex (- maxx minx)
+        rangey (- maxy miny)
+        graphconx ()
+        graphcony ()
+        graphxytoconxy (lambda (graphxy) (
+          (lsnew (+ graphconx (* (/ (+ (lsfirst graphxy) minx) rangex) sizex))
+                 (+ graphcony (* (/ (+ (lslast graphxy) miny) rangey) sizey)))
+          ))
+        pixxytographxy (lambda (pixxy) (
+          (lsnew (- (* (/ (lsfirst pixxy) sizex) rangex) minx)
+                 (- (* (/ (lslast pixxy) sizey) rangey) miny))
+          ))
+        plotxy ()
+        plotfx ()
+        plotfy ()
+        drawfunctb (tbnew)
+        ) (
+        ; draw graph area
+        ((lambda (y) (
+          (if (< y sizey)
+            (
+              (bcolor color-white)
+              (print paintstr)
+              (bcolor color-black)
+              (println "")
+              (runitback (+ y 1))
+              )
+            ()
+            )
+          )) 0)
+        (let (cursorxy (cursorpos)) (
+          (setq graphconx (lsfirst cursorxy))
+          (setq graphcony (- (lslast cursorxy) sizey))
+          ))
+        ; setup draw functions
+        (setq plotxy (lambda (xy) (
+          (movecursor (graphxytoconxy xy))
+          (print "•")
+          )))
+        (tbsval drawfunctb 'plotxy plotxy)
+        (setq plotfx (lambda (fx) (
+          ((lambda (pixx) (
+            (if (< pixx sizex)
+              (let (
+                x (lsfirst (pixxytographxy (lsnew pixx 0)))
+                y (fx x)
+                ) (
+                (plotxy (x y))
+                (runitback (+ pixx 1))
+                ))
+              ()
+              )
+            )) 0)
+          )))
+        (tbsval drawfunctb 'plotfx plotfx)
+        (setq plotfy (lambda (fy) (
+          ((lambda (pixy) (
+            (if (< pixy sizey)
+              (let (
+                y (lslast (pixxytographxy (lsnew 0 pixy)))
+                x (fy y)
+                ) (
+                (plotxy (x y))
+                (runitback (+ pixy 1))
+                ))
+              ()
+              )
+            )) 0)
+          )))
+        (tbsval drawfunctb 'plotfy plotfy)
+        ; plot
+        (fcolor color-black)
+        (if lines?
+          (
+            (plotfx (lambda (x) (
+              (values 0)
+              )))
+            (plotfy (lambda (y) (
+              (values 0)
+              )))
+            )
+          ()
+          )
+        (callback drawfunctb)
+        ; cleanup
+        (movecursor (0 (+ graphcony sizey)))
+        (bcolor color-black)
+        (fcolor color-gray)
+        (println "")
+        ))
+      )))
+    ))
+  ))

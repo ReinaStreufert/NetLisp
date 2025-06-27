@@ -1,0 +1,7 @@
+(require dotnet)
+
+(dnuse (System) (
+  (define exit (lambda () (
+    (Environment:Exit 0)
+    )))
+  ))
