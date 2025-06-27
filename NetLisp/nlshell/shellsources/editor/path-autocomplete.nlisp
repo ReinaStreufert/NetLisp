@@ -3,7 +3,7 @@
 (require dotnet)
 (require text)
 
-(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Runtime NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
   (let (
     pathautocomplete (tbnew)
     editor ()
@@ -14,11 +14,6 @@
     List<LispToken>T (dngenerict List`1 LispToken)
     CharacterMap<TokenClass>T (dngenerict CharacterMap`1 CharacterMapTokenClass)
     CharacterRange<TokenClass>T (dngenerict CharacterMap`1+CharacterRange CharacterMapTokenClass)
-    pathkeywords '("lsp" "cd" ":" "::" "~" "~~" "subfiles" "subdirs" "workdir"
-      "sworkdir" "fexists?" "finfotb" "dexists?" "dinfotb" "movef" "moved" "deletef"
-      "deleted" "createpath" "copyf" "copydr" "reada" "writea" "readatx" "writeatx"
-      "openfr" "openfrw" "parentpath" "pathconc" "pathname" "segmentpath" "constructpath"
-      "inpipe" "outpipe" "bipipe" "open" "save")
     ) (
     (setq escapedpostounescapedpos (lambda (str escapedpos) (
       (let (
@@ -56,6 +51,8 @@
           (setq stringtokfrompositioninlist (lambda (listitems pos charmap) (
             (let (
               items (List<LispToken>.ToArray listitems)
+              result (tbnew)
+              i 0
               range (CharacterMap<TokenClass>.Item charmap pos)
               rangestart (CharacterRange<TokenClass>.Start range)
               class (CharacterRange<TokenClass>.Classification range)
@@ -70,11 +67,12 @@
                       )
                     (if (= (LispToken.Type item) LispDataType.String)
                       (if (= (SourceReference.Position (LispToken.SourceLocation item)) rangestart)
-                        (return-from stringtokfrompositioninlist item)
-                        (setq laststr item)
+                        (return-from stringtokfrompositioninlist (lsnew item i))
+                        (setq laststr (lsnew item i))
                         )
                       ()
                       )
+                    (setq i (+ i 1))
                     )))
                     (return-from stringtokfrompositioninlist laststr)
                   )
@@ -96,38 +94,64 @@
               (values false)
               (= (LispToken.Type firstitem) LispDataType.Symbol)
               )
+            keywordval ()
             cursorpos (ConsoleLispEditor.CursorPosition editor)
-            stringtok (stringtokfrompositioninlist items cursorpos charmap)
-            stringtok? (not (= (typestr stringtok) "list"))
+            stringtokpair (stringtokfrompositioninlist items cursorpos charmap)
+            stringtok? (> (lslen stringtokpair) 0)
+            stringtok ()
+            stringtokindex ()
+            keywordval ()
+            stringargmetadata ()
             ;canautocomplete false
             ) (
               (if (and firstitemsymb? stringtok? (= writingstyle LispWritingStyle.SExpression))
-                (lsiter pathkeywords (lambda (keyword) (
-                  (if (= keyword (LispSymbol.Value firstitem))
-                    (let (
-                      stringpos (SourceReference.Position (LispToken.SourceLocation stringtok))
-                      posinescapedstring (- (- cursorpos stringpos) 1)
-                      stringval (LispString.Value stringtok)
-                      posinstring (escapedpostounescapedpos (txrepl stringval "\\" "\\\\") posinescapedstring)
-                      textcut (if (> posinstring -1)
-                        (txrang stringval 0 posinstring)
-                        ()
-                        )
-                      ) (
-                      (if (< posinstring 0)
-                        (return-from updateautocompletesource)
-                        ()
-                        )
-                      (if (= autocompletecache ())
-                        (setq autocompletecache (AutocompleteSource+AutocompleteCache:CreatePathCache))
-                        ()
-                        )
-                      (ConsoleLispEditor.AutocompleteSource editor (AutocompleteSource:FromFilesystemPath autocompletecache textcut))
-                      (return-from updateautocompletesource)
-                      ))
+                (
+                  (setq stringtok (lsn stringtokpair 0))
+                  (setq stringtokindex (lsn stringtokpair 1))
+                  (setq keywordval (Scope.Get (ListScopeAnalysis.InnerBuiltScope listscope) (LispSymbol.Value firstitem)))
+                  (if (= keywordval ())
+                    (setq keywordval (Scope.Get (ListScopeAnalysis.InnerGlobalScope listscope) (LispSymbol.Value firstitem)))
                     ()
                     )
-                  )))
+                  (if (= keywordval ())
+                    (return-from updateautocompletesource)
+                    ()
+                    )
+                  (if (or (= (LispToken.Type keywordval) LispDataType.Function) (= (LispToken.Type keywordval) LispDataType.Macro))
+                    (if (< stringtokindex (ArgumentDefinedLispRoutine.ArgumentCount keywordval))
+                      (
+                        (setq stringargmetadata (ArgumentDefinedMetadata.GetArgument (ArgumentDefinedLispRoutine.InstanceMetadata keywordval) argind))
+                        (if (MetadataAttributes.HasAttribute (ParamMetadataEntry.Attributes stringargmetadata) "fspath")
+                          ()
+                          (return-from updateautocompletesource)
+                          )
+                        )
+                      (return-from updateautocompletesource)
+                      )
+                    (return-from updateautocompletesource)
+                    )
+                  (let (
+                    stringpos (SourceReference.Position (LispToken.SourceLocation stringtok))
+                    posinescapedstring (- (- cursorpos stringpos) 1)
+                    stringval (LispString.Value stringtok)
+                    posinstring (escapedpostounescapedpos (txrepl stringval "\\" "\\\\") posinescapedstring)
+                    textcut (if (> posinstring -1)
+                      (txrang stringval 0 posinstring)
+                      ()
+                      )
+                    ) (
+                    (if (< posinstring 0)
+                      (return-from updateautocompletesource)
+                      ()
+                      )
+                    (if (= autocompletecache ())
+                      (setq autocompletecache (AutocompleteSource+AutocompleteCache:CreatePathCache))
+                      ()
+                      )
+                    (ConsoleLispEditor.AutocompleteSource editor (AutocompleteSource:FromFilesystemPath autocompletecache textcut))
+                    (return-from updateautocompletesource)
+                    ))
+                  )
                 ()
                 )
               (setq autocompletecache ())
