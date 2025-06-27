@@ -3,10 +3,11 @@
 (require dotnet)
 (require text)
 
-(dnuse (System System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Runtime NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
+(dnuse (System System.Text System.Collections.Generic NetLisp.Data NetLisp.Structs NetLisp.Runtime NetLisp.Text NetLisp.Text.CodeAnalysis nlshell) (
   (let (
     pathautocomplete (tbnew)
     editor ()
+    indexinlist ()
     stringtokfrompositioninlist ()
     updateautocompletesource ()
     autocompletecache ()
@@ -48,34 +49,51 @@
     (dnuset List<LispToken>T List<LispToken> (
       (dnuset CharacterMap<TokenClass>T CharacterMap<TokenClass> (
         (dnuset CharacterRange<TokenClass>T CharacterRange<TokenClass> (
+          (setq indexinlist (lambda (items pos charmap) (
+            (let (
+              buffer (ConsoleLispEditor.Buffer editor)
+              ind 0
+              posclass (CharacterRange<TokenClass>.Classification (CharacterMap<TokenClass>.Item charmap pos))
+              isend (and (not (= posclass CharacterMapTokenClass.String))
+                         (not (= posclass CharacterMapTokenClass.StringEscaped))
+                         (= (Char.ToString (StringBuilder.Chars buffer (- pos 1))) " "))
+              ) (
+              (lsiter items (lambda (item) (
+                (let (
+                  itempos (SourceReference.Position (LispToken.SourceLocation item))
+                  ) (
+                  (if (> itempos (- pos 1))
+                    (return-from lsiter)
+                    (setq ind (+ ind 1))
+                    )
+                  ))
+                )))
+              (let (posresult (if (> ind 0) (- ind 1) ind)) (
+                (if isend
+                  (+ posresult 1)
+                  (values posresult)
+                  )
+                ))
+              ))
+            )))
           (setq stringtokfrompositioninlist (lambda (listitems pos charmap) (
             (let (
               items (List<LispToken>.ToArray listitems)
-              result (tbnew)
-              i 0
               range (CharacterMap<TokenClass>.Item charmap pos)
               rangestart (CharacterRange<TokenClass>.Start range)
               class (CharacterRange<TokenClass>.Classification range)
-              laststr ()
               ) (
               (if (or (= class CharacterMapTokenClass.String) (= class CharacterMapTokenClass.StringEscaped))
-                (
-                  (lsiter items (lambda (item) (
-                    (if (> (SourceReference.Position (LispToken.SourceLocation item)) rangestart)
-                      (return-from stringtokfrompositioninlist laststr)
-                      ()
-                      )
-                    (if (= (LispToken.Type item) LispDataType.String)
-                      (if (= (SourceReference.Position (LispToken.SourceLocation item)) rangestart)
-                        (return-from stringtokfrompositioninlist (lsnew item i))
-                        (setq laststr (lsnew item i))
-                        )
-                      ()
-                      )
-                    (setq i (+ i 1))
-                    )))
-                    (return-from stringtokfrompositioninlist laststr)
-                  )
+                (let (
+                  itemind (indexinlist items pos charmap)
+                  item (lsn items itemind)
+                  stringtok? (= (LispToken.Type item) LispDataType.String)
+                  ) (
+                  (if stringtok?
+                    (lsnew item itemind)
+                    (lsnew)
+                    )
+                  ))
                 (lsnew)
                 )
               ))

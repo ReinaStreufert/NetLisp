@@ -106,14 +106,14 @@
     (tbsval fs 'copyf (lambda (path newPath) (
       (annotation "Copies a file")
       (argument path ("string") (fspath ()) "The path of the file to copy from")
-      (argument newPath ("string") (fsPath ()) "The destination path")
+      (argument newPath ("string") (fspath ()) "The destination path")
       ) (
       (File:Copy path newPath true)
     )))
     (tbsval fs 'copydr (lambda (path newPath) (
       (annotation "Copies a directory and its contents recursively")
       (argument path ("string") (fspath ()) "The path of the directory to copy")
-      (argument newPath ("string") (fsPath ()) "The destination path")
+      (argument newPath ("string") (fspath ()) "The destination path")
       ) (
       (let (
         subfiles (tbgval fs 'subfiles)
