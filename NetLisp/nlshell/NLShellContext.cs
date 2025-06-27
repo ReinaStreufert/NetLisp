@@ -216,7 +216,7 @@ namespace nlshell
 
         private bool saveKeyBinding(ConsoleLispEditor editor, ConsoleKeyInfo keyInfo)
         {
-            if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
+            if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Alt))
             {
                 saveLast = editor.Buffer.ToString();
                 openLast = "(save \"\")";

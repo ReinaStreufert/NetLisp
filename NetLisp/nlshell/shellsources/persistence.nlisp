@@ -9,15 +9,27 @@
     ) (
     (tbuse filesystem (
       (define makebuffer (lambda (text) (
+        (annotation "Sets the NLShell editor buffer to pre-existing text")
+        (argument text ("string") () "The text to set the buffer to")
+        ) (
         (NLShellContext.SetOpenBuffer nlctx text)
         )))
       (define getsavebuffer (lambda () (
+        (annotation "Gets the text of the last NLShell editor snapshot saved with Alt+S")
+        (returnparam ("string") () "The text content of the NLShell buffer when the Alt+S shortcut was most recently pressed")
+        ) (
         (NLShellContext.GetSavedBuffer nlctx)
         )))
       (define open (lambda (path) (
+        (annotation "Sets the NLShell editor buffer to the content of a file")
+        (argument path ("string") (fspath ()) "The path of the file to be opened")
+        ) (
         (makebuffer (readatx path))
         )))
       (define save (lambda (path) (
+        (annotation "Writes the text of the last NLShell editor snapshot saved with Alt+S to a file")
+        (argument path ("string") (fspath ()) "The output path for the written file")
+        ) (
         (writeatx path (getsavebuffer))
         )))
       ))
