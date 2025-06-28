@@ -95,7 +95,7 @@ namespace nlshell
                 int initialCursorPos = 1;
                 activeEditor = new ConsoleLispEditor(sourceAnalyzer, 5, Console.CursorTop, "()");
                 activeEditor.CreepUp = true;
-                activeEditor.BottomMargin = 4;
+                activeEditor.BottomMargin = Math.Min(10, Console.WindowHeight / 4);
                 scriptHost.Editor = activeEditor;
                 if (!editorScriptsAdded)
                 {

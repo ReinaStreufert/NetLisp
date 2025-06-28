@@ -4,51 +4,83 @@
 
 (let (
   math (require math)
-  operators (tbnew)
+  operatorprecedence (tbnew)
   digits (tbnew)
-  routines (tbnew)
-  readtoken ()
-  parseastree ()
-  executetree ()
+  evaluate ()
   ) (
-  (tbsval operators "+" 0)
-  (tbsval operators "-" 0)
-  (tbsval operators "*" 1)
-  (tbsval operators "/" 1)
-  (tbsval operators "^" 2)
-
-  (tbsval digits "." true)
-  ((macro () (
-    ((lambda (exprlist i) (
-      (if (< i 10)
-        (runitback (lspush exprlist (lsnew tbsval digits (txfromnum i) true)) (+ i 1))
-        (values exprlist)
-        )
-      )) (lsnew) 0)
-    ))) ; set digits from "0"-"9"
-
-  (setq readtoken (lambda (str pos) (
+  (tbsval operatorprecedence + 1)
+  (tbsval operatorprecedence - 1)
+  (tbsval operatorprecedence * 2)
+  (tbsval operatorprecedence / 2)
+  (tbsval operatorprecedence ^ 3)
+  (tbsval operatorprecedence 'flushstack 0)
+  
+  (setq evaluate (lambda (expr) (
     (let (
-      resultstr ""
-      class 'noclass
-      newclass ()
-      result (tbnew)
+      operatorstack ()
+      operandstack ()
+      handleoperand ()
+      handleisolation ()
+      handleoperator ()
       ) (
-      ((lambda (char) (
-        (if (tbhaskey operators char)
-          (setq newclass 'operator)
-          (if (tbhaskey digits char)
-            (setq newclass 'digits)
-            (if (= char " ")
-              (setq newclass 'whitespace)
-              (setq newclass 'noclass)
+      (setq handleoperand (lambda (token) (
+        (setq operandstack (lspush operandstack token))
+        )))
+      (setq handleisolation (lambda (token) (
+        (handleoperand (evaluate token))
+        )))
+      (setq handleoperator (lambda (token) (
+        (let (
+          tokenprecedence (tbgval operatorprecedence token)
+          topoper (if (= (lslen operatorstack) 0) () (lslast operatorstack))
+          topoperprecedence (if (= topoper ()) 0 (tbgval operatorprecedence topoper))
+          ) (
+          (if (< tokenprecedence topoperprecedence) (
+            (if (< (lslen operandstack) 2)
+              (return-from evaluate ())
+              (let (
+                leftoperand ()
+                rightoperand ()
+                ) (
+                (setq operatorstack (lspop operatorstack))
+                (setq rightoperand (lslast operandstack))
+                (setq operandstack (lspop operandstack))
+                (setq leftoperand (lslast operandstack))
+                (setq operandstack (lspop operandstack))
+                (setq operandstack (lspush operandstack (topoper leftoperand rightoperand)))
+                (runitback token)
+                ))
+              )
+            ) (
+            (setq operatorstack (lspush operatorstack token))
+            ))
+          ))
+        )))
+      (lsiter expr (lambda (token) (
+        (let (
+          tokentype (typestr token)
+          ) (
+          (if (= tokentype (typestr 0))
+            (handleoperand token)
+            (if (= tokentype (typestr ()))
+              (handleisolation token)
+              (if (= tokentype (typestr +))
+                (handleoperator token)
+                (return-from evaluate ())
+                )
               )
             )
-          )
-        (if (= newclass 'noclass)
-          ()
-          )
-        )) (txrang str pos 1))
+          ))
+        )))
+      (if (> (lslen operatorstack) 0)
+        (handleoperator 'flushstack)
+        ()
+        )
+      (if (= (lslen operandstack) 1)
+        (lslast operandstack)
+        ()
+        )
       ))
     )))
+  (values evaluate)
   ))

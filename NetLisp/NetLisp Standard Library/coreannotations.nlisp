@@ -1,0 +1,30 @@
+; redefine native lisp special forms with annotations
+
+(let (
+  sf.require require
+  sf.load load
+  sf.if if
+  sf.runitback runitback ;why
+  sf.return-from return-from
+  sf.= =
+  sf.> >
+  sf.< <
+  sf.not not
+  sf.or or
+  sf.and and
+  sf.+ +
+  sf.- -
+  sf.* *
+  sf./ /
+  sf.printstr printstr
+  sf.values values
+  sf.returnvalues returnvalues ;what ? oh god
+  sf.quote quote
+  sf.typestr typestr
+  sf.lambda lambda
+  sf.macro macro
+  ) (
+  
+  ))
+
+()
