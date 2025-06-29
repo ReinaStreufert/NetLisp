@@ -64,7 +64,7 @@
             (handleoperand token)
             (if (= tokentype (typestr ()))
               (handleisolation token)
-              (if (= tokentype (typestr +))
+              (if (or (= tokentype (typestr +)) (= tokentype (typestr ^)))
                 (handleoperator token)
                 (return-from evaluate ())
                 )
@@ -82,5 +82,12 @@
         )
       ))
     )))
-  (values evaluate)
+  (define infix (macro (expr) (
+    (annotation "Evaluates a mathematical infix-notation expression respecting the order of operations")
+    (returnparam ("number") () "The result of the expression")
+    (argument expr ("list") () "A list containing the mathematical infix-notation expression")
+    ) (
+    (evaluate expr)
+    )))
+  (values)
   ))
